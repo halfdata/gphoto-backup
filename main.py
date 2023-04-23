@@ -1,6 +1,6 @@
-"""Example of using GPhotoBackup."""
-from gphotobackup import GPhotoBackup
+"""Example of using GPhotosBackup."""
+from gphotosbackup import GPhotosBackup
 
 if __name__ == '__main__':
-    backup = GPhotoBackup()
+    backup = GPhotosBackup()
     backup.start()

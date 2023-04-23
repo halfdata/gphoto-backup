@@ -5,14 +5,14 @@ import requests
 
 import google_auth_oauthlib.flow
 
-from gphotobackup import GPhotoBackup
+from gphotosbackup import GPhotosBackup
 
 CLIENT_SECRETS_FILE = "client_secret.json"
 SCOPES = ['https://www.googleapis.com/auth/photoslibrary.readonly']
 API_SERVICE_NAME = 'photoslibrary'
 API_VERSION = 'v1'
 
-backup = GPhotoBackup()
+backup = GPhotosBackup()
 app = flask.Flask(__name__)
 app.secret_key = 'NOT REALLY IMPORTANT FOR NOW!'
 
@@ -80,25 +80,6 @@ def callback():
     backup.set_credentials(flow.credentials)
 
     return flask.redirect(flask.url_for('index'))
-
-
-@app.route('/revoke')
-def revoke():
-    if 'credentials' not in flask.session:
-        return ('You need to <a href="/authorize">authorize</a> before ' +
-                'testing the code to revoke credentials.')
-
-    credentials = backup.get_credentials()
-
-    revoke = requests.post('https://oauth2.googleapis.com/revoke',
-        params={'token': credentials.token},
-        headers = {'content-type': 'application/x-www-form-urlencoded'})
-
-    status_code = getattr(revoke, 'status_code')
-    if status_code == 200:
-        return('Credentials successfully revoked.')
-    else:
-        return('An error occurred.')
 
 
 if __name__ == '__main__':

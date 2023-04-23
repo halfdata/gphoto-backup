@@ -1,4 +1,4 @@
-"""Main class to use Google Photo Backup."""
+"""Main class to use Google Photos Backup."""
 import http
 import httplib2
 import json
@@ -36,7 +36,7 @@ def disable_exception_traceback():
     sys.tracebacklimit = default_value
 
 
-class GPhotoBackup:
+class GPhotosBackup:
     """Class that handles creating backups."""
     STORAGE_PATH: str = 'archive'
     metadata_obj: MetaData = MetaData()
@@ -108,14 +108,14 @@ class GPhotoBackup:
             connection.commit()
 
     def get_credentials(self) -> Optional[google.oauth2.credentials.Credentials]:
-        """Read Google Photo Credentials."""
+        """Read Google Photos Credentials."""
         credentials_dict = self.get_option('google-photo-credentials')
         if not credentials_dict:
             return None
         return google.oauth2.credentials.Credentials(**credentials_dict)
 
     def set_credentials(self, credentials: google.oauth2.credentials.Credentials) -> None:
-        """Save Google Photo Credentials."""
+        """Save Google Photos Credentials."""
         credential_value = {
             'token': credentials.token,
             'refresh_token': credentials.refresh_token,
@@ -271,10 +271,10 @@ class GPhotoBackup:
                 raise
 
     def start(self):
-        """Start/continue crawling Google Photo."""
+        """Start/continue crawling Google Photos."""
         credentials = self.get_credentials()
         if not credentials:
-            print('No credentials to access Google Photo were found. '
+            print('No credentials to access Google Photos were found. '
                   'Please generate them.')
             return
         try:
@@ -283,7 +283,7 @@ class GPhotoBackup:
                 credentials=credentials,
                 static_discovery=False)
         except (httplib2.error.ServerNotFoundError, socket.gaierror):
-            print('Can not connect to Google Photo. '
+            print('Can not connect to Google Photos. '
                   'Please check internet connection.')
             return
 
@@ -298,11 +298,11 @@ class GPhotoBackup:
                 print(error)
                 return
             except google.auth.exceptions.RefreshError as error:
-                print('Invalid credentials to access Google Photo. '
+                print('Invalid credentials to access Google Photos. '
                       'Please generate them.')
                 return
             except (http.client.RemoteDisconnected, socket.gaierror):
-                print('Can not connect to Google Photo. '
+                print('Can not connect to Google Photos. '
                       'Please check internet connection.')
                 return
             except KeyboardInterrupt:
