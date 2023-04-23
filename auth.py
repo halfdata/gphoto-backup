@@ -12,13 +12,47 @@ SCOPES = ['https://www.googleapis.com/auth/photoslibrary.readonly']
 API_SERVICE_NAME = 'photoslibrary'
 API_VERSION = 'v1'
 
-STORAGE_PATH = 'storage/files'
-
 backup = GPhotoBackup()
-
-
 app = flask.Flask(__name__)
-app.secret_key = 'REPLACE ME - this value is here as a placeholder.'
+app.secret_key = 'NOT REALLY IMPORTANT FOR NOW!'
+
+@app.route("/")
+def index():
+    if backup.check_credentials():
+        return flask.redirect(flask.url_for('disable_credentials'))
+    if not os.path.exists(CLIENT_SECRETS_FILE):
+        return flask.redirect(flask.url_for('create_client_secret_json'))
+    try:
+        google_auth_oauthlib.flow.Flow.from_client_secrets_file(
+            CLIENT_SECRETS_FILE, scopes=SCOPES)
+    except ValueError:
+        return flask.redirect(flask.url_for('create_client_secret_json'))
+    
+    return flask.render_template("index.html")
+
+@app.route("/create-client-secret-json")
+def create_client_secret_json():
+    """Explain how to create client_secret.json."""
+    return flask.render_template("create-client-secret-json.html",
+                                 filepath=os.path.abspath(CLIENT_SECRETS_FILE))
+
+@app.route("/disable-credentials")
+def disable_credentials():
+    """Disable credentials."""
+    if not backup.check_credentials():
+        return flask.redirect(flask.url_for('index'))
+    return flask.render_template("disable-credentials.html")
+
+@app.route("/revoke-credentials")
+def revoke_credentials():
+    """Revoke credentials."""
+    if not backup.check_credentials():
+        return flask.redirect(flask.url_for('index'))
+    credentials = backup.get_credentials()
+    requests.post('https://oauth2.googleapis.com/revoke',
+        params={'token': credentials.token},
+        headers = {'content-type': 'application/x-www-form-urlencoded'})
+    return flask.redirect(flask.url_for('index'))
 
 
 @app.route('/authorize')
@@ -45,7 +79,7 @@ def callback():
     flow.fetch_token(authorization_response=authorization_response)
     backup.set_credentials(flow.credentials)
 
-    return flask.redirect(flask.url_for('test_api_request'))
+    return flask.redirect(flask.url_for('index'))
 
 
 @app.route('/revoke')
@@ -69,4 +103,4 @@ def revoke():
 
 if __name__ == '__main__':
     os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
-    app.run(port=8080, debug=True)
+    app.run(host='localhost', port=8080, debug=True)

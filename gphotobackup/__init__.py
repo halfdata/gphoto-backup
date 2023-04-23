@@ -125,6 +125,26 @@ class GPhotoBackup:
             'scopes': credentials.scopes}
         self.set_option('google-photo-credentials', credential_value)
 
+    def check_credentials(self):
+        """Check if credentials exist and are valid.
+        
+        TODO: Organize handling exceptions more accurate way.
+        """
+        credentials = self.get_credentials()
+        if not credentials:
+            return False
+        try:
+            gphoto = googleapiclient.discovery.build(API_SERVICE_NAME,
+                API_VERSION,
+                credentials=credentials,
+                static_discovery=False)
+            response = gphoto.mediaItems().list(pageSize=1).execute()
+            self.set_credentials(credentials)
+        except Exception as error:
+            print(error)
+            return False
+        return True
+
     def get_mediaitem(self, *, mediaitem_id: Optional[str] = None,
                       filename: Optional[str] = None) -> Any:
         """Get media item from DB."""
