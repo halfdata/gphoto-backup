@@ -178,6 +178,12 @@ class GPhotoBackup:
         item_type = item['mimeType'].split('/')[0]
         creation_time = item.get('mediaMetadata', {}).get('creationTime', '')
 
+        if item_type == 'video':
+            status = item.get('mediaMetadata', {}).get('video', {}).get('status', None)
+            if status != 'READY':
+                print(f'{item["filename"]} - not ready')
+                return None
+
         if not mediaitem:
             filename=self.generate_filename(item)
             with self.engine.connect() as connection:
