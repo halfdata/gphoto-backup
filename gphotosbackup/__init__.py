@@ -6,10 +6,8 @@ import os
 import requests
 import shutil
 import socket
-import sys
 
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import contextmanager
 from datetime import datetime
 from typing import Any, Optional
 
@@ -22,19 +20,7 @@ from sqlalchemy import select, insert, update, delete
 import google.oauth2.credentials
 import googleapiclient.discovery
 
-SCOPES = ['https://www.googleapis.com/auth/photoslibrary.readonly']
-API_SERVICE_NAME = 'photoslibrary'
-API_VERSION = 'v1'
-
-
-@contextmanager
-def disable_exception_traceback():
-    """All traceback information is suppressed."""
-    default_value = getattr(sys, "tracebacklimit", 1000)
-    sys.tracebacklimit = 0
-    yield
-    sys.tracebacklimit = default_value
-
+from . import utils
 
 class GPhotosBackup:
     """Class that handles creating backups."""
@@ -134,8 +120,8 @@ class GPhotosBackup:
         if not credentials:
             return False
         try:
-            gphoto = googleapiclient.discovery.build(API_SERVICE_NAME,
-                API_VERSION,
+            gphoto = googleapiclient.discovery.build(utils.API_SERVICE_NAME,
+                utils.API_VERSION,
                 credentials=credentials,
                 static_discovery=False)
             response = gphoto.mediaItems().list(pageSize=1).execute()
@@ -267,7 +253,7 @@ class GPhotosBackup:
             if os.path.exists(full_filename):
                 print(f'{filename} - failed to download')
                 os.remove(full_filename)
-            with disable_exception_traceback():
+            with utils.disable_exception_traceback():
                 raise
 
     def start(self):
@@ -275,11 +261,11 @@ class GPhotosBackup:
         credentials = self.get_credentials()
         if not credentials:
             print('No credentials to access Google Photos were found. '
-                  'Please generate them.')
+                  'Please run auth.py to get valid credentials.')
             return
         try:
-            gphoto = googleapiclient.discovery.build(API_SERVICE_NAME,
-                API_VERSION,
+            gphoto = googleapiclient.discovery.build(utils.API_SERVICE_NAME,
+                utils.API_VERSION,
                 credentials=credentials,
                 static_discovery=False)
         except (httplib2.error.ServerNotFoundError, socket.gaierror):
@@ -299,7 +285,7 @@ class GPhotosBackup:
                 return
             except google.auth.exceptions.RefreshError as error:
                 print('Invalid credentials to access Google Photos. '
-                      'Please generate them.')
+                      'Please run auth.py to get valid credentials.')
                 return
             except (http.client.RemoteDisconnected, socket.gaierror):
                 print('Can not connect to Google Photos. '
@@ -307,7 +293,7 @@ class GPhotosBackup:
                 return
             except KeyboardInterrupt:
                 print('Downloading media items terminated. Run script again to continue.')
-                with disable_exception_traceback():
+                with utils.disable_exception_traceback():
                     raise
             if 'mediaItems' not in response:
                 print('No media items in response.')
@@ -326,7 +312,7 @@ class GPhotosBackup:
                         pass
                 except KeyboardInterrupt:
                     print('Downloading media items terminated. Run script again to continue.')
-                    with disable_exception_traceback():
+                    with utils.disable_exception_traceback():
                         raise
 
             if 'nextPageToken' in response:

@@ -4,13 +4,10 @@ import flask
 import requests
 
 import google_auth_oauthlib.flow
-
+from gphotosbackup import utils
 from gphotosbackup import GPhotosBackup
 
 CLIENT_SECRETS_FILE = "client_secret.json"
-SCOPES = ['https://www.googleapis.com/auth/photoslibrary.readonly']
-API_SERVICE_NAME = 'photoslibrary'
-API_VERSION = 'v1'
 
 backup = GPhotosBackup()
 app = flask.Flask(__name__)
@@ -24,7 +21,7 @@ def index():
         return flask.redirect(flask.url_for('create_client_secret_json'))
     try:
         google_auth_oauthlib.flow.Flow.from_client_secrets_file(
-            CLIENT_SECRETS_FILE, scopes=SCOPES)
+            CLIENT_SECRETS_FILE, scopes=utils.SCOPES)
     except ValueError:
         return flask.redirect(flask.url_for('create_client_secret_json'))
     
@@ -59,7 +56,7 @@ def revoke_credentials():
 def authorize():
     """Authorize within Google Account."""
     flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
-        CLIENT_SECRETS_FILE, scopes=SCOPES)
+        CLIENT_SECRETS_FILE, scopes=utils.SCOPES)
     flow.redirect_uri = flask.url_for('callback', _external=True)
     authorization_url, state = flow.authorization_url(
         access_type='offline',
@@ -72,7 +69,7 @@ def callback():
     """Callback for Google Account authorization."""
     state = flask.session['state']
     flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
-        CLIENT_SECRETS_FILE, scopes=SCOPES, state=state)
+        CLIENT_SECRETS_FILE, scopes=utils.SCOPES, state=state)
     flow.redirect_uri = flask.url_for('callback', _external=True)
 
     authorization_response = flask.request.url
