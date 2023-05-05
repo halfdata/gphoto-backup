@@ -4,7 +4,7 @@ This tool allows you to download media items from Google Photos and keep them lo
 ### How to install the tool?
 It's a pretty standard way:
 1. Download the tool or clone git repository.
-2. Make sure that you have Python 3.6 or higher.
+2. Make sure that you have Python 3.7 or higher.
 3. Create venv and switch to it (optional):
    ```
    python -m venv .venv
@@ -17,16 +17,10 @@ It's a pretty standard way:
 
 
 ### How to use the tool?
-Unfortunately, the only way to access Google Photos Library API is an access using OAuth 2.0 tokens (no API keys, no service accounts). So the first step is authenticate the tool to access your Google Account.
-1. Run auth.py in terminal:
+1. Run main.py in terminal:
    ```
    python auth.py
    ```
-2. Open `http://localhost:8080` in your browser and follow the instructions to get access token. When you finish, the token is saved in local SQLite database.
-3. Go back to terminal and stop `auth.py` by pressing Ctrl+C (or Command+C). Never leave it running.
-4. Start downloading your library:
-   ```
-   python main.py
-   ```
+2. Open `http://localhost:8080` in your browser and follow the instructions.
 
 More detailed documentation is coming soon...

@@ -2,10 +2,22 @@
 
 
 {% block content %}
-    <p>Click the button below to authorize <strong>Google Photos Backup</strong> application
-        to access your Google Photos.</p>
-    
-    <div class="buttons">
-        <a class="button" href="{{ url_for('authorize') }}">Authorize</a>
+    <script>
+        function start_downloading() {
+            document.getElementById("lets-start").classList.add("invisible");
+            document.getElementById("downloading").classList.remove("invisible");
+            document.getElementById("downloading").setAttribute("src", "{{ url_for('run') }}")
+            return false;
+        }
+    </script>
+    <div id="lets-start" class="lets-start">
+        <p>Ready? Click the button below to start downloading media items from Google Photos
+            library. You can terminate the process by closing browser tab. You can always
+            resume the process by opening web page again.</p>
+        
+        <div class="buttons">
+            <a class="button" href="#" onclick="return start_downloading();">Start Downloading</a>
+        </div>
     </div>
+    <iframe id="downloading" class="full-size invisible"></iframe>
 {% endblock %}

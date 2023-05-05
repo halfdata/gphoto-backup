@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+
+{% block content %}
+    <p>Click the button below to authorize <strong>Google Photos Backup</strong> application
+        to access your Google Photos.</p>
+    
+    <div class="buttons">
+        <a class="button" href="{{ url_for('authorize') }}">Connect to Google Account</a>
+    </div>
+{% endblock %}
