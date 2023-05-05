@@ -19,7 +19,7 @@ It's a pretty standard way:
 ### How to use the tool?
 1. Run main.py in terminal:
    ```
-   python auth.py
+   python main.py
    ```
 2. Open `http://localhost:8080` in your browser and follow the instructions.
 
