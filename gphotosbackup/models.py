@@ -49,6 +49,7 @@ class DB:
             Column("original_filename", String(1023)),
             Column("filename", String(1023)),
             Column("thumbnail", String(1023)),
+            Column("last_seen", Integer),
             Index("idx_mediaitem_id", "mediaitem_id"),
             Index("idx_filename", "filename"),
             Index("idx_creation_time", "creation_time")

@@ -1,4 +1,4 @@
 - Add downloading thumbnails (at least for video).
-- Add cycle counter for media items to detect removed items.
+- Add cycle counter for media items to detect removed items - DONE.
 - Add downloading albums.
 - Add preview of media items and albums.

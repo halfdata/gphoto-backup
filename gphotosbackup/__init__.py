@@ -28,6 +28,7 @@ class GPhotosBackup:
     db: models.DB
     log_queue: queue.SimpleQueue
     global_crawler_lock: threading.Event
+    current_cycle: int
     crawling_termination_time: Optional[float] = None
 
     def __init__(self, *,
@@ -37,7 +38,6 @@ class GPhotosBackup:
                  update_credentials_callback: Callable,
                  db: models.DB):
         self.global_crawler_lock = global_crawler_lock
-        self.user_id = user_id
         self.credentials = credentials
         self.update_credentials_callback = update_credentials_callback
         self.db = db
@@ -48,6 +48,7 @@ class GPhotosBackup:
             'photoslibrary', 'v1', credentials=self.credentials,
             static_discovery=False)
         self.log_queue = queue.SimpleQueue()
+        self.current_cycle = self.db.get_user_option(self.user.id, 'current-cycle', 0)
 
     def file_exists(self, filename: str) -> bool:
         """Check if file exists."""
@@ -108,6 +109,7 @@ class GPhotosBackup:
             filename=self.generate_filename(item)
             item_id = self.db.add_mediaitem(
                 user_id=self.user.id,
+                last_seen=self.current_cycle,
                 mediaitem_id=item['id'],
                 type=item_type,
                 mime_type=item['mimeType'],
@@ -122,10 +124,13 @@ class GPhotosBackup:
         download_info.id = mediaitem.id
         if not mediaitem.filename:
             filename=self.generate_filename(item)
-            self.db.update_mediaitem(id=mediaitem.id, filename=filename)
+            self.db.update_mediaitem(id=mediaitem.id,
+                                     filename=filename,
+                                     last_seen=self.current_cycle)
             download_info.filename = filename
             return download_info
 
+        self.db.update_mediaitem(id=mediaitem.id, last_seen=self.current_cycle)
         download_info.filename = mediaitem.filename
         abs_path_folder = os.path.dirname(
             os.path.abspath(os.path.join(self.STORAGE_PATH,
@@ -214,6 +219,8 @@ class GPhotosBackup:
                 'next-page-token', response['nextPageToken'])
         else:
             self.db.set_user_option(self.user.id, 'next-page-token', None)
+            self.current_cycle += 1
+            self.db.set_user_option(self.user.id, 'current-cycle', self.current_cycle)
 
         return return_info
 
