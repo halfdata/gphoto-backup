@@ -86,11 +86,12 @@ class GPhotosBackup:
     def set_mediaitem(self, item: dict[str, Any]) -> utils.DownloadInfo:
         """Save media item into DB."""
         mediaitem = self.db.get_user_mediaitem_by(user_id=self.user.id,
-                                                  mediaitem_id=item['id'])
+                                                  mediaitem_uid=item['id'])
         item_type = item['mimeType'].split('/')[0]
         creation_time = item.get('mediaMetadata', {}).get('creationTime', '')
         download_info = utils.DownloadInfo(
             id=0,
+            mediaitem_uid=item['id'],
             creation_time=creation_time,
             item_type=item_type,
             base_url=item['baseUrl'],
@@ -110,7 +111,7 @@ class GPhotosBackup:
             item_id = self.db.add_mediaitem(
                 user_id=self.user.id,
                 last_seen=self.current_cycle,
-                mediaitem_id=item['id'],
+                mediaitem_uid=item['id'],
                 type=item_type,
                 mime_type=item['mimeType'],
                 product_url=item['productUrl'],
@@ -168,38 +169,45 @@ class GPhotosBackup:
             with utils.disable_exception_traceback():
                 raise
 
-    def _download_mediaitems_from_next_page(self) -> list[utils.DownloadInfo]:
+    def download_mediaitems_from_next_page(self, album: Optional[str] = None) -> bool:
         """Reads next 10 media items from Google Photos and download them.
         
-        Returns: list with information about processed media items.
+        Returns: True, if downloading of all items from all pages are finished.
         """
         page_token = self.db.get_user_option(self.user.id, 'next-page-token')
         try:
-            response = self.gphoto_resource.mediaItems().list(
-                pageSize=10, pageToken=page_token).execute()
+            if album:
+                body = {
+                    'pageSize': 10,
+                    'albumId': album,
+                    'pageToken': page_token
+                }
+                response = self.gphoto_resource.mediaItems().search(
+                    body=body).execute()
+            else:
+                response = self.gphoto_resource.mediaItems().list(
+                    pageSize=10, pageToken=page_token).execute()
             self.update_credentials_callback()
-        except googleapiclient.errors.HttpError as error:
-            print(error)
-            raise
-        except google.auth.exceptions.RefreshError as error:
-            print('Invalid credentials to access Google Photos.')
-            raise
-        except (http.client.RemoteDisconnected, socket.gaierror):
-            print('Can not connect to Google Photos. '
-                  'Please check internet connection.')
-            raise
         except KeyboardInterrupt:
             print('Downloading media items terminated. Run script again to continue.')
             with utils.disable_exception_traceback():
                 raise
         if 'mediaItems' not in response:
-            print('No media items in response.')
+            print('No mediaItems node in response.')
             raise errors.InvalidResponse()
         files_to_download = []
-        return_info = []
         for item in response['mediaItems']:
             result = self.set_mediaitem(item)
-            return_info.append(result)
+            if album:
+                albumitem = self.db.get_albumitem_by(album_uid=album,
+                                                     mediaitem_uid=result.mediaitem_uid)
+                if albumitem:
+                    self.db.update_albumitem(id=albumitem.id,
+                                             last_seen=self.current_cycle)
+                else:
+                    self.db.add_albumitem(album_uid=album,
+                                          mediaitem_uid=result.mediaitem_uid,
+                                          last_seen=self.current_cycle)
             if result.download_status == utils.DownloadStatus.READY:
                 files_to_download.append(result)
             else:
@@ -217,21 +225,120 @@ class GPhotosBackup:
         if 'nextPageToken' in response:
             self.db.set_user_option(self.user.id,
                 'next-page-token', response['nextPageToken'])
+            return False
         else:
             self.db.set_user_option(self.user.id, 'next-page-token', None)
-            self.current_cycle += 1
-            self.db.set_user_option(self.user.id, 'current-cycle', self.current_cycle)
 
-        return return_info
+        return True
+
+    def download_albums_from_next_page(self) -> bool:
+        """Reads next 50 albums from Google Photos and save them into DB.
+        
+        Returns: True, if downloading of all items from all pages are finished.
+        """
+        page_token = self.db.get_user_option(self.user.id, 'next-page-token')
+        try:
+            response = self.gphoto_resource.albums().list(
+                pageSize=50, pageToken=page_token).execute()
+            self.update_credentials_callback()
+        except KeyboardInterrupt:
+            print('Downloading albums terminated. Run script again to continue.')
+            with utils.disable_exception_traceback():
+                raise
+        if 'albums' not in response:
+            print('No albums node in response.')
+            raise errors.InvalidResponse()
+        for item in response['albums']:
+            album = self.db.get_user_album_by(user_id=self.user.id,
+                                              album_uid=item['id'])
+            if not album:
+                self.db.add_album(user_id=self.user.id,
+                                  album_uid=item['id'],
+                                  title=item['title'],
+                                  type='album',
+                                  product_url=item['productUrl'],
+                                  cover_mediaitem_uid=item['coverPhotoMediaItemId'],
+                                  last_seen=self.current_cycle)
+                self.log_queue.put(f'Album "{item["title"]}" added')
+            else:
+                self.db.update_album(id=album.id,
+                                     title=item['title'],
+                                     last_seen=self.current_cycle)
+                self.log_queue.put(f'Album "{item["title"]}" updated')
+
+        if 'nextPageToken' in response:
+            self.db.set_user_option(self.user.id,
+                'next-page-token', response['nextPageToken'])
+            return False
+        else:
+            self.db.set_user_option(self.user.id, 'next-page-token', None)
+
+        return True
 
     def crawl(self):
         """Crawl Google Photos and download media items."""
         self.global_crawler_lock.set()
+        try:
+            backup_stage = utils.BackupStage(
+                self.db.get_user_option(self.user.id,
+                    'backup-stage', utils.BackupStage.MEDIA_ITEM.value))
+        except ValueError:
+            backup_stage = utils.BackupStage.MEDIA_ITEM
+        # backup_stage = utils.BackupStage.ALBUM
         while True:
             if self.crawling_termination_time:
                 if datetime.utcnow().timestamp() > self.crawling_termination_time:
                     break
-            self._download_mediaitems_from_next_page()
+            if backup_stage == utils.BackupStage.MEDIA_ITEM:
+                switch_stage = self.download_mediaitems_from_next_page()
+                if switch_stage:
+                    backup_stage = utils.BackupStage.ALBUM
+                    self.db.set_user_option(self.user.id, 'backup-stage', backup_stage.value)
+            elif backup_stage == utils.BackupStage.ALBUM:
+                switch_stage = self.download_albums_from_next_page()
+                if switch_stage:
+                    album = self.db.get_user_album_after(user_id=self.user.id, id=0)
+                    if album:
+                        self.db.set_user_option(self.user.id, 'backup-stage-args', album.id)
+                        backup_stage = utils.BackupStage.ALBUM_ITEM
+                        self.db.set_user_option(self.user.id, 'backup-stage', backup_stage.value)
+                    else:
+                        backup_stage = utils.BackupStage.END
+            elif backup_stage == utils.BackupStage.ALBUM_ITEM:
+                album_id = self.db.get_user_option(self.user.id, 'backup-stage-args', 0)
+                if not album_id:
+                    album = self.db.get_user_album_after(user_id=self.user.id,
+                                                         id=0)
+                else:
+                    album = self.db.get_user_album_by(user_id=self.user.id,
+                                                      id=album_id)
+                    if not album:
+                        album = self.db.get_user_album_after(user_id=self.user.id,
+                                                             id=album_id)
+                if album:
+                    switch_stage = self.download_mediaitems_from_next_page(
+                        album=album.album_uid)
+                    if switch_stage:
+                        album = self.db.get_user_album_after(user_id=self.user.id,
+                                                             id=album.id)
+                        if album:
+                            self.db.set_user_option(self.user.id,
+                                                    'backup-stage-args',
+                                                    album.id)
+                        else:
+                            backup_stage = utils.BackupStage.END
+                else:
+                    backup_stage = utils.BackupStage.END
+            else:
+                raise errors.UnknownBackupStage('Unknown backup stage.')
+            
+            if backup_stage == utils.BackupStage.END:
+                backup_stage = utils.BackupStage.MEDIA_ITEM
+                self.db.set_user_option(self.user.id, 'backup-stage', backup_stage.value)
+                self.db.set_user_option(self.user.id, 'backup-stage-args', None)
+                self.current_cycle += 1
+                self.db.set_user_option(self.user.id, 'current-cycle', self.current_cycle)
+
         print('Terminated by watchdog.')
         self.global_crawler_lock.clear()
 

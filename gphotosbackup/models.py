@@ -19,29 +19,35 @@ class DB:
 
     def _define_db_tables(self) -> None:
         """Define required database tables."""
-        self.user_table = Table(
-            "users",
-            self.metadata_obj,
-            Column("id", Integer, primary_key=True, autoincrement=True),
-            Column("uid", String(63)),
-            Column("email", String(63)),
-            Column("image_url", String(255)),
-            Index("idx_email", "email")
-        )
-        self.option_table = Table(
-            "options",
-            self.metadata_obj,
-            Column("user_id", Integer),
-            Column("key", String(63)),
-            Column("value", String(16383)),
-            Index("idx_key", "key")
-        )
-        self.media_table = Table(
-            "media",
+        self.album_table = Table(
+            "albums",
             self.metadata_obj,
             Column("id", Integer, primary_key=True, autoincrement=True),
             Column("user_id", Integer),
-            Column("mediaitem_id", String(255)),
+            Column("album_uid", String(255)),
+            Column("title", String(1023)),
+            Column("type", String(15)),
+            Column("product_url", String(1023)),
+            Column("cover_mediaitem_uid", Integer),
+            Column("last_seen", Integer),
+            Index("idx_albums_album_uid", "album_uid")
+        )
+        self.albumitem_table = Table(
+            "albumitems",
+            self.metadata_obj,
+            Column("id", Integer, primary_key=True, autoincrement=True),
+            Column("album_uid", String(255)),
+            Column("mediaitem_uid", String(255)),
+            Column("last_seen", Integer),
+            Index("idx_albumitems_album_uid", "album_uid"),
+            Index("idx_albumitems_mediaitem_uid", "mediaitem_uid")
+        )
+        self.mediaitem_table = Table(
+            "mediaitems",
+            self.metadata_obj,
+            Column("id", Integer, primary_key=True, autoincrement=True),
+            Column("user_id", Integer),
+            Column("mediaitem_uid", String(255)),
             Column("type", String(15)),
             Column("mime_type", String(31)),
             Column("product_url", String(1023)),
@@ -50,9 +56,26 @@ class DB:
             Column("filename", String(1023)),
             Column("thumbnail", String(1023)),
             Column("last_seen", Integer),
-            Index("idx_mediaitem_id", "mediaitem_id"),
-            Index("idx_filename", "filename"),
-            Index("idx_creation_time", "creation_time")
+            Index("idx_mediaitems_mediaitem_uid", "mediaitem_uid"),
+            Index("idx_mediaitems_filename", "filename"),
+            Index("idx_mediaitems_creation_time", "creation_time")
+        )
+        self.option_table = Table(
+            "options",
+            self.metadata_obj,
+            Column("user_id", Integer),
+            Column("key", String(63)),
+            Column("value", String(16383)),
+            Index("idx_options_key", "key")
+        )
+        self.user_table = Table(
+            "users",
+            self.metadata_obj,
+            Column("id", Integer, primary_key=True, autoincrement=True),
+            Column("uid", String(63)),
+            Column("email", String(63)),
+            Column("image_url", String(255)),
+            Index("idx_users_email", "email")
         )
 
     def get_user_option(self, user_id: int, key: str,
@@ -127,16 +150,16 @@ class DB:
         return user_id
 
     def get_user_mediaitem_by(self, *, user_id: int,
-                              mediaitem_id: Optional[str] = None,
+                              mediaitem_uid: Optional[str] = None,
                               filename: Optional[str] = None) -> Any:
         """Get user media item from DB."""
         with self.engine.connect() as connection:
-            statement = (select(self.media_table)
-                .where(self.media_table.c.user_id == user_id))
-            if mediaitem_id is not None:
-                statement = statement.where(self.media_table.c.mediaitem_id == mediaitem_id)
+            statement = (select(self.mediaitem_table)
+                .where(self.mediaitem_table.c.user_id == user_id))
+            if mediaitem_uid is not None:
+                statement = statement.where(self.mediaitem_table.c.mediaitem_uid == mediaitem_uid)
             if filename is not None:
-                statement = statement.where(self.media_table.c.filename == filename)
+                statement = statement.where(self.mediaitem_table.c.filename == filename)
             statement = statement.limit(1)
             mediaitem_record = connection.execute(statement).first()
         return mediaitem_record
@@ -144,15 +167,90 @@ class DB:
     def add_mediaitem(self, **kwargs) -> int:
         """Insert new media item and return its id."""
         with self.engine.connect() as connection:
-            mediaitem_id = connection.execute(
-                insert(self.media_table).values(**kwargs)).inserted_primary_key.id
+            id = connection.execute(
+                insert(self.mediaitem_table).values(**kwargs)).inserted_primary_key.id
             connection.commit()
-        return mediaitem_id
+        return id
 
     def update_mediaitem(self, id: int, **kwargs):
         """Update media item."""
         with self.engine.connect() as connection:
-            connection.execute(update(self.media_table)
-                .where(self.media_table.c.id == id)
+            connection.execute(update(self.mediaitem_table)
+                .where(self.mediaitem_table.c.id == id)
                 .values(**kwargs))
             connection.commit()
+
+    def get_user_album_by(self, *, user_id: int,
+                          id: Optional[int] = None, 
+                          album_uid: Optional[str] = None) -> Any:
+        """Get user album from DB."""
+        with self.engine.connect() as connection:
+            statement = (select(self.album_table)
+                .where(self.album_table.c.user_id == user_id))
+            if id is not None:
+                statement = statement.where(self.album_table.c.id == id)
+            if album_uid is not None:
+                statement = statement.where(self.album_table.c.album_uid == album_uid)
+            statement = statement.limit(1)
+            album_record = connection.execute(statement).first()
+        return album_record
+
+    def get_user_album_after(self, *, user_id: int, id: int) -> Any:
+        """Get next user album after specified ID."""
+        with self.engine.connect() as connection:
+            statement = (select(self.album_table)
+                .where(self.album_table.c.user_id == user_id)
+                .where(self.album_table.c.id > id)
+                .order_by(self.album_table.c.id))
+            statement = statement.limit(1)
+            album_record = connection.execute(statement).first()
+        return album_record
+
+    def update_album(self, id: int, **kwargs):
+        """Update album."""
+        with self.engine.connect() as connection:
+            connection.execute(update(self.album_table)
+                .where(self.album_table.c.id == id)
+                .values(**kwargs))
+            connection.commit()
+
+    def add_album(self, **kwargs) -> int:
+        """Insert new album and return its id."""
+        with self.engine.connect() as connection:
+            id = connection.execute(
+                insert(self.album_table).values(**kwargs)).inserted_primary_key.id
+            connection.commit()
+        return id
+
+    def get_albumitem_by(self, *,
+                         id: Optional[int] = None, 
+                         album_uid: Optional[str] = None,
+                         mediaitem_uid: Optional[str] = None) -> Any:
+        """Get user album from DB."""
+        with self.engine.connect() as connection:
+            statement = select(self.albumitem_table)
+            if id is not None:
+                statement = statement.where(self.albumitem_table.c.id == id)
+            if album_uid is not None:
+                statement = statement.where(self.albumitem_table.c.album_uid == album_uid)
+            if mediaitem_uid is not None:
+                statement = statement.where(self.albumitem_table.c.mediaitem_uid == mediaitem_uid)
+            statement = statement.limit(1)
+            albumitem_record = connection.execute(statement).first()
+        return albumitem_record
+
+    def update_albumitem(self, id: int, **kwargs):
+        """Update album item."""
+        with self.engine.connect() as connection:
+            connection.execute(update(self.albumitem_table)
+                .where(self.albumitem_table.c.id == id)
+                .values(**kwargs))
+            connection.commit()
+
+    def add_albumitem(self, **kwargs) -> int:
+        """Insert new album and return its id."""
+        with self.engine.connect() as connection:
+            id = connection.execute(
+                insert(self.albumitem_table).values(**kwargs)).inserted_primary_key.id
+            connection.commit()
+        return id

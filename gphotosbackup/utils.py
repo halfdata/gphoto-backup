@@ -8,16 +8,25 @@ from typing import Optional
 
 
 class DownloadStatus(str, Enum):
-    """Enum defining download status."""
+    """Download statuses."""
     READY = 'ready'
     NOT_READY = 'not ready'
     ALREADY_DOWNLOADED = 'already downloaded'
+
+
+class BackupStage(Enum):
+    """Backup stages."""
+    MEDIA_ITEM = 'mediaitem'
+    ALBUM = 'album'
+    ALBUM_ITEM = 'albumitem'
+    END = 'end'
 
 
 @dataclass
 class DownloadInfo:
     """Information about file to download."""
     id: int
+    mediaitem_uid: str
     creation_time: str
     item_type: str
     base_url: str
