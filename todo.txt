@@ -1,5 +1,5 @@
 - Add downloading thumbnails (at least for video).
 - Add cycle counter for media items to detect removed items - DONE.
 - Add downloading albums - DONE.
-- Add autoscrolling of iframe to the bottom.
+- Add autoscrolling of iframe to the bottom - DONE.
 - Add preview of media items and albums.
