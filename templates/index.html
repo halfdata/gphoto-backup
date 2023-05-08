@@ -7,6 +7,10 @@
             document.getElementById("lets-start").classList.add("invisible");
             document.getElementById("downloading").classList.remove("invisible");
             document.getElementById("downloading").setAttribute("src", "{{ url_for('run') }}")
+            setInterval(function(){
+                iframe = document.getElementById("downloading")
+                iframe.contentWindow.scrollTo(0, iframe.contentDocument.body.scrollHeight);
+            }, 1000)
             return false;
         }
     </script>
