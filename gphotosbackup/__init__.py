@@ -1,10 +1,8 @@
 """Main class to use Google Photos Backup."""
-import http
 import os
 import queue
 import requests
 import shutil
-import socket
 import threading
 import time
 
