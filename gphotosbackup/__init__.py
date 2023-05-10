@@ -20,7 +20,7 @@ from . import errors, models, utils
 
 class GPhotosBackup:
     """Class that handles creating backups."""
-    STORAGE_PATH: str = 'archive'
+    storage_path: str
     user: Any
     credentials: google.oauth2.credentials.Credentials
     gphoto_resource: googleapiclient.discovery.Resource
@@ -36,11 +36,13 @@ class GPhotosBackup:
                  user_id: str,
                  credentials: google.oauth2.credentials.Credentials,
                  update_credentials_callback: Callable,
-                 db: models.DB):
+                 db: models.DB,
+                 storage_path: str = 'archive'):
         self.global_crawler_lock = global_crawler_lock
         self.credentials = credentials
         self.update_credentials_callback = update_credentials_callback
         self.db = db
+        self.storage_path = storage_path
         self.user = self.db.get_user_by(id=user_id)
         if not self.user:
             raise AttributeError(f'User with id "{user_id}" not found.')
@@ -52,7 +54,7 @@ class GPhotosBackup:
 
     def file_exists(self, filename: str) -> bool:
         """Check if file exists."""
-        abs_filename = os.path.abspath(os.path.join(self.STORAGE_PATH,
+        abs_filename = os.path.abspath(os.path.join(self.storage_path,
                                                     self.user.email,
                                                     filename))
         return os.path.exists(abs_filename)
@@ -65,7 +67,7 @@ class GPhotosBackup:
             time_parts = creation_time.split('-')
             if len(time_parts) > 1:
                 folder = os.path.join(time_parts[0], time_parts[1])
-        abs_path_folder = os.path.abspath(os.path.join(self.STORAGE_PATH,
+        abs_path_folder = os.path.abspath(os.path.join(self.storage_path,
                                                        self.user.email,
                                                        folder))
         try:
@@ -133,7 +135,7 @@ class GPhotosBackup:
 
         self.db.update_mediaitem(id=mediaitem.id, last_seen=self.current_cycle)
         download_info.filename = mediaitem.filename
-        abs_path_filename = os.path.abspath(os.path.join(self.STORAGE_PATH,
+        abs_path_filename = os.path.abspath(os.path.join(self.storage_path,
                                                          self.user.email,
                                                          mediaitem.filename))
         os.makedirs(os.path.dirname(abs_path_filename), exist_ok=True)        
@@ -147,7 +149,7 @@ class GPhotosBackup:
         """Download media item."""
         print(f'{download_info.filename} - downloading')
         url = f'{download_info.base_url}=d{"v" if download_info.item_type == "video" else ""}'
-        full_filename = os.path.abspath(os.path.join(self.STORAGE_PATH,
+        full_filename = os.path.abspath(os.path.join(self.storage_path,
                                                      self.user.email,
                                                      download_info.filename))
         filetime = utils.convert_iso_to_timestamp(download_info.creation_time)

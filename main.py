@@ -14,7 +14,7 @@ CLIENT_SECRETS_FILE = "client_secret.json"
 SCOPES = ['openid',
           'https://www.googleapis.com/auth/photoslibrary.readonly',
           'https://www.googleapis.com/auth/userinfo.email']
-
+STORAGE_PATH = 'archive'
 
 app = flask.Flask(__name__)
 app.secret_key = 'NOT REALLY NEEDED FOR LOCAL USAGE!'
@@ -58,7 +58,8 @@ def run():
                                    user_id=flask.session['user_id'],
                                    credentials=credentials,
                                    update_credentials_callback=update_credentials,
-                                   db=db)
+                                   db=db,
+                                   storage_path=STORAGE_PATH)
 
     return flask.Response(gphotos_backup.run(),
                           content_type='text/event-stream')
