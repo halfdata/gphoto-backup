@@ -133,12 +133,11 @@ class GPhotosBackup:
 
         self.db.update_mediaitem(id=mediaitem.id, last_seen=self.current_cycle)
         download_info.filename = mediaitem.filename
-        abs_path_folder = os.path.dirname(
-            os.path.abspath(os.path.join(self.STORAGE_PATH,
-                                         self.user.email,
-                                         mediaitem.filename)))
-        os.makedirs(abs_path_folder, exist_ok=True)        
-        if not self.file_exists(mediaitem.filename):
+        abs_path_filename = os.path.abspath(os.path.join(self.STORAGE_PATH,
+                                                         self.user.email,
+                                                         mediaitem.filename))
+        os.makedirs(os.path.dirname(abs_path_filename), exist_ok=True)        
+        if not self.file_exists(abs_path_filename):
             return download_info
         
         download_info.download_status = utils.DownloadStatus.ALREADY_DOWNLOADED
