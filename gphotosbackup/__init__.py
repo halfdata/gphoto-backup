@@ -27,6 +27,7 @@ class GPhotosBackup:
     global_crawler_lock: threading.Event
     current_cycle: int
     crawling_termination_time: Optional[float] = None
+    download_thumbnails: bool = True
 
     def __init__(self, *,
                  global_crawler_lock: threading.Event,
@@ -156,7 +157,7 @@ class GPhotosBackup:
                                                           self.user.email,
                                                           utils.THUMBNAILS_FOLDER,
                                                           thumbnail))
-        if not self.file_exists(abs_path_thumbnail):
+        if not self.file_exists(abs_path_thumbnail) and self.download_thumbnails:
             download_info.download_status = utils.DownloadStatus.THUMBNAIL_ONLY
         else:
             download_info.download_status = utils.DownloadStatus.ALREADY_DOWNLOADED
