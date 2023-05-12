@@ -1,4 +1,4 @@
-- Download thumbnails (at least for video).
+- Download thumbnails (at least for video) - DONE.
 - Cycle counter for media items to detect removed items - DONE.
 - Downloading albums - DONE.
 - Autoscrolling of iframe to the bottom - DONE.

@@ -68,10 +68,6 @@ class GPhotosBackup:
         abs_path_folder = os.path.abspath(os.path.join(self.storage_path,
                                                        self.user.email,
                                                        folder))
-        # try:
-        #     os.makedirs(abs_path_folder, exist_ok=True)
-        # except OSError:
-        #     return None
         filename = item['filename']
         i = 2
         while (os.path.exists(os.path.join(abs_path_folder, filename)) or
@@ -153,7 +149,6 @@ class GPhotosBackup:
         abs_path_filename = os.path.abspath(os.path.join(self.storage_path,
                                                          self.user.email,
                                                          mediaitem.filename))
-        # os.makedirs(os.path.dirname(abs_path_filename), exist_ok=True)        
         if not self.file_exists(abs_path_filename):
             return download_info
 
@@ -161,7 +156,6 @@ class GPhotosBackup:
                                                           self.user.email,
                                                           utils.THUMBNAILS_FOLDER,
                                                           thumbnail))
-        # os.makedirs(os.path.dirname(abs_path_thumbnail), exist_ok=True)        
         if not self.file_exists(abs_path_thumbnail):
             download_info.download_status = utils.DownloadStatus.THUMBNAIL_ONLY
         else:
@@ -171,7 +165,7 @@ class GPhotosBackup:
 
     def handle_mediaitem(self, download_info: utils.DownloadInfo) -> None:
         """Download media item."""
-        print(f'{download_info.filename} - downloading')
+        print(f'Processing: {download_info.filename}')
         if download_info.download_status == utils.DownloadStatus.NOT_READY:
             self.log_queue.put(f'{download_info.original_filename} - not ready '
                                'for downloading')
@@ -316,7 +310,6 @@ class GPhotosBackup:
                     'backup-stage', utils.BackupStage.MEDIA_ITEM.value))
         except ValueError:
             backup_stage = utils.BackupStage.MEDIA_ITEM
-        # backup_stage = utils.BackupStage.ALBUM
         while True:
             if self.crawling_termination_time:
                 if datetime.utcnow().timestamp() > self.crawling_termination_time:
