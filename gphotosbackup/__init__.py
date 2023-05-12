@@ -1,8 +1,6 @@
 """Main class to use Google Photos Backup."""
 import os
 import queue
-import requests
-import shutil
 import threading
 import time
 
@@ -15,6 +13,7 @@ import googleapiclient.discovery
 
 from . import errors, models, utils
 
+THUMBNAILS_FOLDER = 'thumbnails'
 
 class GPhotosBackup:
     """Class that handles creating backups."""
@@ -57,7 +56,8 @@ class GPhotosBackup:
                                                     filename))
         return os.path.exists(abs_filename)
 
-    def generate_filename(self, item: dict[str, Any]) -> Optional[str]:
+    def generate_filename(self, item: dict[str, Any],
+                          is_thumbnail: bool = False) -> Optional[str]:
         """Generate filename based on media item data."""
         folder = 'other'
         creation_time = item.get('mediaMetadata', {}).get('creationTime', '')
@@ -68,10 +68,10 @@ class GPhotosBackup:
         abs_path_folder = os.path.abspath(os.path.join(self.storage_path,
                                                        self.user.email,
                                                        folder))
-        try:
-            os.makedirs(abs_path_folder, exist_ok=True)
-        except OSError:
-            return None
+        # try:
+        #     os.makedirs(abs_path_folder, exist_ok=True)
+        # except OSError:
+        #     return None
         filename = item['filename']
         i = 2
         while (os.path.exists(os.path.join(abs_path_folder, filename)) or
@@ -87,7 +87,7 @@ class GPhotosBackup:
         """Save media item into DB."""
         mediaitem = self.db.get_user_mediaitem_by(user_id=self.user.id,
                                                   mediaitem_uid=item['id'])
-        item_type = item['mimeType'].split('/')[0]
+        item_type = item['mimeType'].split('/')[0].lower()
         creation_time = item.get('mediaMetadata', {}).get('creationTime', '')
         download_info = utils.DownloadInfo(
             id=0,
@@ -97,7 +97,8 @@ class GPhotosBackup:
             base_url=item['baseUrl'],
             filename='',
             original_filename=item['filename'],
-            download_status=utils.DownloadStatus.READY
+            thumbnail='',
+            download_status=utils.DownloadStatus.ITEM_AND_THUMBNAIL
         )
 
         if item_type == 'video':
@@ -107,7 +108,9 @@ class GPhotosBackup:
                 return download_info
 
         if not mediaitem:
-            filename=self.generate_filename(item)
+            filename = self.generate_filename(item)
+            # TODO: Assume that we don't have files *.<video_ext>.jpg
+            thumbnail = filename + ('.jpg' if item_type == 'video' else '')
             item_id = self.db.add_mediaitem(
                 user_id=self.user.id,
                 last_seen=self.current_cycle,
@@ -117,56 +120,89 @@ class GPhotosBackup:
                 product_url=item['productUrl'],
                 creation_time=creation_time,
                 original_filename=item['filename'],
-                filename=filename)
+                filename=filename,
+                thumbnail=thumbnail)
             download_info.id = item_id
             download_info.filename = filename
+            download_info.thumbnail = thumbnail
             return download_info
 
         download_info.id = mediaitem.id
         if not mediaitem.filename:
-            filename=self.generate_filename(item)
+            filename = self.generate_filename(item)
+            # TODO: Assume that we don't have files *.<video_ext>.jpg
+            thumbnail = filename + ('.jpg' if item_type == 'video' else '')
             self.db.update_mediaitem(id=mediaitem.id,
                                      filename=filename,
+                                     thumbnail=thumbnail,
                                      last_seen=self.current_cycle)
             download_info.filename = filename
+            download_info.thumbnail = thumbnail
             return download_info
 
-        self.db.update_mediaitem(id=mediaitem.id, last_seen=self.current_cycle)
+        thumbnail = mediaitem.thumbnail
+        if not thumbnail:
+            # TODO: Assume that we don't have files *.<video_ext>.jpg
+            thumbnail = mediaitem.filename + ('.jpg' if item_type == 'video' else '')
+        self.db.update_mediaitem(id=mediaitem.id,
+                                 thumbnail=thumbnail,
+                                 last_seen=self.current_cycle)
         download_info.filename = mediaitem.filename
+        download_info.thumbnail = thumbnail
+
         abs_path_filename = os.path.abspath(os.path.join(self.storage_path,
                                                          self.user.email,
                                                          mediaitem.filename))
-        os.makedirs(os.path.dirname(abs_path_filename), exist_ok=True)        
+        # os.makedirs(os.path.dirname(abs_path_filename), exist_ok=True)        
         if not self.file_exists(abs_path_filename):
             return download_info
-        
-        download_info.download_status = utils.DownloadStatus.ALREADY_DOWNLOADED
+
+        abs_path_thumbnail = os.path.abspath(os.path.join(self.storage_path,
+                                                          self.user.email,
+                                                          utils.THUMBNAILS_FOLDER,
+                                                          thumbnail))
+        # os.makedirs(os.path.dirname(abs_path_thumbnail), exist_ok=True)        
+        if not self.file_exists(abs_path_thumbnail):
+            download_info.download_status = utils.DownloadStatus.THUMBNAIL_ONLY
+        else:
+            download_info.download_status = utils.DownloadStatus.ALREADY_DOWNLOADED
+
         return download_info
 
-    def download_mediaitem(self, download_info: utils.DownloadInfo) -> None:
+    def handle_mediaitem(self, download_info: utils.DownloadInfo) -> None:
         """Download media item."""
         print(f'{download_info.filename} - downloading')
-        url = f'{download_info.base_url}=d{"v" if download_info.item_type == "video" else ""}'
-        full_filename = os.path.abspath(os.path.join(self.storage_path,
-                                                     self.user.email,
-                                                     download_info.filename))
+        if download_info.download_status == utils.DownloadStatus.NOT_READY:
+            self.log_queue.put(f'{download_info.original_filename} - not ready '
+                               'for downloading')
+            return
+        if download_info.download_status == utils.DownloadStatus.ALREADY_DOWNLOADED:
+            self.log_queue.put(f'{download_info.original_filename} - aready '
+                               'downloaded')
+            return
         filetime = utils.convert_iso_to_timestamp(download_info.creation_time)
-        try:
-            with requests.get(url, timeout=(5, None), stream=True) as r:
-                r.raise_for_status()
-                with open(full_filename, 'wb') as f:
-                    shutil.copyfileobj(r.raw, f)
-                os.utime(full_filename, times=(filetime, filetime))
-                self.log_queue.put(f'{download_info.original_filename} - '
-                                   'downloaded')
-        except Exception:
-            if os.path.exists(full_filename):
-                print(f'{download_info.filename} - failed to download')
-                self.log_queue.put(f'{download_info.original_filename} - '
-                                   'failed to download')
-                os.remove(full_filename)
-            with utils.disable_exception_traceback():
-                raise
+        if download_info.download_status == utils.DownloadStatus.ITEM_AND_THUMBNAIL:
+            filename_url = (f'{download_info.base_url}=d'
+                            f'{"v" if download_info.item_type == "video" else ""}')
+            full_filename = os.path.abspath(os.path.join(self.storage_path,
+                self.user.email, download_info.filename))
+            os.makedirs(os.path.dirname(full_filename), exist_ok=True)
+            utils.download_file(url=filename_url,
+                                filename=full_filename,
+                                filetime = filetime)
+            self.log_queue.put(f'{download_info.original_filename} - file downloaded')
+
+        thumbnail_url = (f'{download_info.base_url}=w480-h480'
+                         f'{"-no" if download_info.item_type == "video" else ""}')
+        full_thumbnail = os.path.abspath(os.path.join(self.storage_path,
+            self.user.email, utils.THUMBNAILS_FOLDER, download_info.thumbnail))
+        os.makedirs(os.path.dirname(full_thumbnail), exist_ok=True)
+        utils.download_file(url=thumbnail_url,
+                            filename=full_thumbnail,
+                            filetime = filetime)
+        if download_info.download_status == utils.DownloadStatus.THUMBNAIL_ONLY:
+            self.log_queue.put(f'{download_info.original_filename} - thumbnail downloaded')
+
 
     def download_mediaitems_from_next_page(self, album: Optional[str] = None) -> bool:
         """Reads next 10 media items from Google Photos and download them.
@@ -207,14 +243,11 @@ class GPhotosBackup:
                     self.db.add_albumitem(album_uid=album,
                                           mediaitem_uid=result.mediaitem_uid,
                                           last_seen=self.current_cycle)
-            if result.download_status == utils.DownloadStatus.READY:
-                files_to_download.append(result)
-            else:
-                self.log_queue.put(f'{result.original_filename} - {result.download_status}')
+            files_to_download.append(result)
 
         with ThreadPoolExecutor(max_workers=5) as executor:
             try:
-                for _ in executor.map(self.download_mediaitem, files_to_download):
+                for _ in executor.map(self.handle_mediaitem, files_to_download):
                     pass
             except KeyboardInterrupt:
                 print('Downloading media items terminated. Run script again to continue.')
