@@ -84,9 +84,11 @@ h3 {
     margin: 0.5em 0;
 }
 ul.menu {
-    width: 800px;
+    max-width: 800px;
     margin: 0 auto;
     font-size: 16px;
+    width: 100%;
+    padding: 0;
 }
 ul.menu li {
     display: inline-block;
@@ -372,4 +374,20 @@ footer {
     color: #aaa;
     line-height: 60px;
 	font-size: 0.8em;
+}
+@media only screen and (max-width: 640px) {
+    .paginator {
+        text-align: center;
+    }
+    .image-container {
+        height: auto;
+        display: block;
+    }
+    .image-container img {
+        height: auto !important;
+        width: 100% !important;
+    }
+    ul.menu {
+        width: auto;
+    }
 }
