@@ -2,5 +2,6 @@
 - Cycle counter for media items to detect removed items - DONE.
 - Downloading albums - DONE.
 - Autoscrolling of iframe to the bottom - DONE.
-- Preview of media items and albums.
+- Preview of media items and albums - PARTIALLY DONE.
+- Add 404 page.
 - Run script in Docker.

@@ -13,6 +13,8 @@ import googleapiclient.discovery
 
 from . import errors, models, utils
 
+THUMBNAIL_SIZE = 640
+
 
 class GPhotosBackup:
     """Class that handles creating backups."""
@@ -190,7 +192,7 @@ class GPhotosBackup:
                                 filetime = filetime)
             self.log_queue.put(f'{download_info.original_filename} - file downloaded')
 
-        thumbnail_url = (f'{download_info.base_url}=w480-h480'
+        thumbnail_url = (f'{download_info.base_url}=w{THUMBNAIL_SIZE}-h{THUMBNAIL_SIZE}'
                          f'{"-no" if download_info.item_type == "video" else ""}')
         full_thumbnail = os.path.abspath(os.path.join(self.storage_path,
             self.user.email, utils.THUMBNAILS_FOLDER, download_info.thumbnail))
