@@ -2,31 +2,18 @@
 
 {% block content_wrapper_class %}content-wrapper-wide{% endblock %}
 {% set active_menu_item = 'browser' %}
-
+{% set subheader = user.email + "'s media" %}
 {% block content %}
     {% if mediaitems %}
         {% if total_pages > 1 %}
-        <div class="paginator">
-            {% if page == 1 %}
-            <span class="icon-paginator icon-paginator-disabled" title="First page"><i class="icon icon-angle-double-left"></i></span>
-            <span class="icon-paginator icon-paginator-disabled" title="Previous page"><i class="icon icon-angle-left"></i></span>
-            {% else %}
-            <a class="icon-paginator" href="{{ url_for('user_mediaitems', user_id=user.id, page=1) }}" title="First page"><i class="icon icon-angle-double-left"></i></a>
-            <a class="icon-paginator" href="{{ url_for('user_mediaitems', user_id=user.id, page=page-1) }}" title="Previous page"><i class="icon icon-angle-left"></i></a>
-            {% endif %}
-            <input class="paginator-current-page" value="{{ page }}" max-value="{{ total_pages }}" /> of {{ total_pages }}
-            {% if page == total_pages %}
-            <span class="icon-paginator icon-paginator-disabled" title="Next page"><i class="icon icon-angle-right"></i></span>
-            <span class="icon-paginator icon-paginator-disabled" title="Last page"><i class="icon icon-angle-double-right"></i></span>
-            {% else %}
-            <a class="icon-paginator" href="{{ url_for('user_mediaitems', user_id=user.id, page=page+1) }}" title="Next page"><i class="icon icon-angle-right"></i></a>
-            <a class="icon-paginator" href="{{ url_for('user_mediaitems', user_id=user.id, page=total_pages) }}" title="Last page"><i class="icon icon-angle-double-right"></i></a>
-            {% endif %}
-        </div>
+            {% include 'paginator.html' %}
         {% endif %}
         <div class="images-container">
             {% for mediaitem in mediaitems %}<div class="image-container"><a href="{{ url_for('library_mediaitem', user_id=user.id, mediaitem_id=mediaitem.id) }}"><img style="height: 160px; width:{{ (160*mediaitem.width/mediaitem.height)|int() }}px" src="{{ url_for('library_thumbnail', user_id=user.id, mediaitem_id=mediaitem.id) }}" /></a></div>{% endfor %}
         </div>
+        {% if total_pages > 1 %}
+            {% include 'paginator.html' %}
+        {% endif %}
         <script>
             var inputs = document.getElementsByClassName('paginator-current-page')
             for (var i=0; i<inputs.length; i++) {

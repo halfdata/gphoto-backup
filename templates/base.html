@@ -23,6 +23,7 @@
             <li class="{% if active_menu_item == 'browser' %}menu-item-active{% endif %}"><a href="{{ url_for('users') }}">Browse Downloaded Media</a></li>
         </ul>
         <div class="content-wrapper {% block content_wrapper_class %}{% endblock %}">
+            {% if subheader %}<h3 class="centered">{{ subheader }}</h3>{% endif %}
             <div class="content">
                 <div class="content-inner">
                 {% block content %}{% endblock %}
