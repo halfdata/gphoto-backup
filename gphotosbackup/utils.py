@@ -12,6 +12,7 @@ from typing import Optional
 
 
 THUMBNAILS_FOLDER = 'thumbnails'
+ITEMS_PER_PAGE = 100
 
 
 class DownloadStatus(str, Enum):

@@ -13,7 +13,6 @@ import googleapiclient.discovery
 
 from . import errors, models, utils
 
-THUMBNAILS_FOLDER = 'thumbnails'
 
 class GPhotosBackup:
     """Class that handles creating backups."""
@@ -86,6 +85,8 @@ class GPhotosBackup:
                                                   mediaitem_uid=item['id'])
         item_type = item['mimeType'].split('/')[0].lower()
         creation_time = item.get('mediaMetadata', {}).get('creationTime', '')
+        width = item.get('mediaMetadata', {}).get('width')
+        height = item.get('mediaMetadata', {}).get('height')
         download_info = utils.DownloadInfo(
             id=0,
             mediaitem_uid=item['id'],
@@ -118,7 +119,9 @@ class GPhotosBackup:
                 creation_time=creation_time,
                 original_filename=item['filename'],
                 filename=filename,
-                thumbnail=thumbnail)
+                thumbnail=thumbnail,
+                width=width,
+                height=height)
             download_info.id = item_id
             download_info.filename = filename
             download_info.thumbnail = thumbnail

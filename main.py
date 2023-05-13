@@ -1,4 +1,5 @@
 import flask
+import math
 import os
 import requests
 import threading
@@ -27,25 +28,22 @@ def index():
     if 'warning' in flask.session:
         warning = flask.session['warning']
         del flask.session['warning']
-    if not flask.session.get('user_id'):
+    if 'user_id' not in flask.session:
         return flask.render_template('login.html', warning=warning)
-    if not flask.session.get('credentials', {}):
+    if 'credentials' not in flask.session:
         return flask.render_template('login.html', warning=warning)
     user_record = db.get_user_by(id=flask.session['user_id'])
     if not user_record:
         del flask.session['user_id']
         del flask.session['credentials']
         return flask.render_template('login.html', warning='User not found.')
-    email = None
-    if user_record:
-        email = user_record.email
     
-    return flask.render_template('index.html', email=email, warning=warning)
+    return flask.render_template('index.html', authorized_user=user_record, warning=warning)
 
 
 @app.route("/run")
 def run():
-    if not flask.session.get('user_id') or not flask.session.get('credentials', {}):
+    if 'user_id' not in flask.session or 'credentials' not in flask.session:
         return 'Authorization required.'
     credentials = google.oauth2.credentials.Credentials(
         **flask.session['credentials'])
@@ -135,6 +133,72 @@ def callback():
     flask.session['user_id'] = user_id
     flask.session['credentials'] = utils.credentials_to_dict(flow.credentials)
     return flask.redirect(flask.url_for('index'))
+
+
+@app.route('/mediaitems')
+def users():
+    """Explore photos."""
+    users = db.get_users()
+    return flask.render_template('users.html', users=users)
+
+@app.route('/mediaitems/<int:user_id>')
+@app.route('/mediaitems/<int:user_id>/<int:page>')
+def user_mediaitems(user_id: int, page: int = 1):
+    """Explore media items."""
+    user = db.get_user_by(id=user_id)
+    if not user:
+        return 'User not found.'
+    total_mediaitems = db.get_user_mediaitems_total(user_id=user.id)
+    total_pages = max(1, math.ceil(total_mediaitems/utils.ITEMS_PER_PAGE))
+    if page > total_pages or page < 1:
+        return 'Page not found.'
+    mediaitems = db.get_user_mediaitems(user_id=user.id,
+                                        offset=(page - 1) * utils.ITEMS_PER_PAGE,
+                                        number=utils.ITEMS_PER_PAGE)
+    return flask.render_template('photos.html',
+                                 mediaitems=mediaitems,
+                                 user=user,
+                                 page=page,
+                                 total_pages=total_pages)
+
+
+@app.route('/library/<int:user_id>/thumbnails/<int:mediaitem_id>')
+def library_thumbnail(user_id: int, mediaitem_id: int):
+    user = db.get_user_by(id=user_id)
+    if not user:
+        return 'User not found.'
+    mediaitem = db.get_user_mediaitem_by(user_id=user_id, id=mediaitem_id)
+    if not mediaitem:
+        return 'No mediaitem.'
+    if not mediaitem.thumbnail:
+        return 'No thumbnail.'
+    abs_path_thumbnail = os.path.abspath(os.path.join(STORAGE_PATH,
+                                                      user.email,
+                                                      utils.THUMBNAILS_FOLDER,
+                                                      mediaitem.thumbnail))
+    if not os.path.exists(abs_path_thumbnail):
+        return 'No thumbnail.'
+    return flask.send_from_directory(os.path.dirname(abs_path_thumbnail),
+                                     os.path.basename(abs_path_thumbnail))
+
+
+@app.route('/library/<int:user_id>/mediaitems/<int:mediaitem_id>')
+def library_mediaitem(user_id, mediaitem_id):
+    user = db.get_user_by(id=user_id)
+    if not user:
+        return 'User not found.'
+    mediaitem = db.get_user_mediaitem_by(user_id=user_id, id=mediaitem_id)
+    if not mediaitem:
+        return 'No mediaitem.'
+    if not mediaitem.filename:
+        return 'No mediaitem.'
+    abs_path_filename = os.path.abspath(os.path.join(STORAGE_PATH,
+                                                      user.email,
+                                                      mediaitem.filename))
+    if not os.path.exists(abs_path_filename):
+        return 'No mediaitem.'
+    return flask.send_from_directory(os.path.dirname(abs_path_filename),
+                                     os.path.basename(abs_path_filename))
 
 
 if __name__ == '__main__':

@@ -5,7 +5,7 @@ from typing import Any, Optional
 from sqlalchemy import Table, Index, Column
 from sqlalchemy import Integer, String
 from sqlalchemy import MetaData
-from sqlalchemy import create_engine, Engine
+from sqlalchemy import create_engine, Engine, func
 from sqlalchemy import select, insert, update, delete
 
 class DB:
@@ -55,6 +55,8 @@ class DB:
             Column("original_filename", String(1023)),
             Column("filename", String(1023)),
             Column("thumbnail", String(1023)),
+            Column("width", Integer),
+            Column("height", Integer),
             Column("last_seen", Integer),
             Index("idx_mediaitems_mediaitem_uid", "mediaitem_uid"),
             Index("idx_mediaitems_filename", "filename"),
@@ -122,6 +124,13 @@ class DB:
             connection.execute(statement)
             connection.commit()
 
+    def get_users(self) -> list[Any]:
+        """Get users from DB."""
+        with self.engine.connect() as connection:
+            statement = select(self.user_table).order_by(self.user_table.c.id.asc())
+            users = connection.execute(statement).all()
+        return users
+
     def get_user_by(self, *,
                     id: Optional[int] = None,
                     uid: Optional[str] = None,
@@ -149,13 +158,37 @@ class DB:
             connection.commit()
         return user_id
 
+    def get_user_mediaitems(self, *, user_id: int,
+                            offset: Optional[int] = 0,
+                            number: Optional[int] = 100) -> list[Any]:
+        """Get user mediaitems from DB."""
+        with self.engine.connect() as connection:
+            statement = (select(self.mediaitem_table)
+                .where(self.mediaitem_table.c.user_id == user_id)
+                .order_by(self.mediaitem_table.c.creation_time.desc())
+                .offset(offset)
+                .limit(number))
+            mediaitems = connection.execute(statement).all()
+        return mediaitems
+
+    def get_user_mediaitems_total(self, *, user_id: int) -> int:
+        """Get total user mediaitems from DB."""
+        with self.engine.connect() as connection:
+            statement = (select(func.count()).select_from(self.mediaitem_table)
+                .where(self.mediaitem_table.c.user_id == user_id))
+            total = connection.execute(statement).scalar()
+        return total
+
     def get_user_mediaitem_by(self, *, user_id: int,
+                              id: Optional[int] = None,
                               mediaitem_uid: Optional[str] = None,
                               filename: Optional[str] = None) -> Any:
         """Get user media item from DB."""
         with self.engine.connect() as connection:
             statement = (select(self.mediaitem_table)
                 .where(self.mediaitem_table.c.user_id == user_id))
+            if id is not None:
+                statement = statement.where(self.mediaitem_table.c.id == id)
             if mediaitem_uid is not None:
                 statement = statement.where(self.mediaitem_table.c.mediaitem_uid == mediaitem_uid)
             if filename is not None:

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% set active_menu_item = 'browser' %}
+
+{% block content %}
+    {% if users %}
+    <div class="users-container">
+        <p>Select the user whose photos you want to view.</p>
+
+        {% for user in users %}
+        <a class="user-selector" href="{{ url_for('user_mediaitems', user_id=user.id) }}">{{ user.email }}</a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="users-container">
+        <p>No media items found. Seems you never created backup. ;-)</p>
+    </div>
+    {% endif %}
+{% endblock %}

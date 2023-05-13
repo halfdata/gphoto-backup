@@ -13,12 +13,16 @@
 <body>
     <div class="wrapper">
         <header>
-            {% if email %}
+            {% if authorized_user %}
             <a class="icon-button disconnect-button" href="{{ url_for('revoke') }}" title="Disconnect from Google Account"><i class="icon icon-logout"></i></a>
             {% endif %}
-            <h1>Google Photos Backup{% if email %}<span>{{ email }}</span>{% endif %}</h1>
+            <h1>Google Photos Backup{% if authorized_user %}<span>{{ authorized_user.email }}</span>{% endif %}</h1>
         </header>
-        <div class="content-wrapper">
+        <ul class="menu">
+            <li class="{% if active_menu_item == 'backup' %}menu-item-active{% endif %}"><a href="{{ url_for('index') }}">Create Backup</a></li>
+            <li class="{% if active_menu_item == 'browser' %}menu-item-active{% endif %}"><a href="{{ url_for('users') }}">Browse Downloaded Media</a></li>
+        </ul>
+        <div class="content-wrapper {% block content_wrapper_class %}{% endblock %}">
             <div class="content">
                 <div class="content-inner">
                 {% block content %}{% endblock %}

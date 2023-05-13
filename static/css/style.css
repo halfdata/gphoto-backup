@@ -19,6 +19,10 @@
     -moz-osx-font-smoothing: grayscale;
 }
 .icon-logout:before { content: '\e801'; }
+.icon-angle-double-left:before { content: '\f100'; }
+.icon-angle-double-right:before { content: '\f101'; }
+.icon-angle-left:before { content: '\f104'; }
+.icon-angle-right:before { content: '\f105'; }
 .icon-google:before { content: '\f1a0'; }
 
 html, body {
@@ -75,7 +79,27 @@ h3 {
     font-weight: 100;
     font-size: 1.3em;
     margin: 0.5em 0;
-} 
+}
+ul.menu {
+    width: 800px;
+    margin: 0 auto;
+    font-size: 16px;
+}
+ul.menu li {
+    display: inline-block;
+    margin: 1em 1em;
+    padding: 0.3em 0.2em;
+	transition-property: border, background, color;
+	-webkit-transition-property: border, background, color;
+	transition-duration: .3s;
+	-webkit-transition-duration: .3s;
+}
+ul.menu li.menu-item-active {
+    border-bottom: 3px solid rgba(136, 176, 75, 1);
+}
+ul.menu li.menu-item-active a {
+    color: rgba(136, 176, 75, 1);
+}
 .content-wrapper {
     margin: 5px auto;
     max-width: 800px;
@@ -83,6 +107,9 @@ h3 {
     flex: 1 0 auto;
     display: flex;
     flex-direction: column;    
+}
+.content-wrapper-wide {
+    max-width: 1800px !important;
 }
 .content {
     margin: 1.2em;
@@ -160,8 +187,8 @@ a.button, a.button:visited {
 	cursor: pointer;
 	-webkit-user-select: none;
 	user-select: none;
-	transition-property: border, background, color, box-shadow, width, height, font-size;
-	-webkit-transition-property: border, background, color, box-shadow, width, height, font-size;
+	transition-property: border, background, color;
+	-webkit-transition-property: border, background, color;
 	transition-duration: .3s;
 	-webkit-transition-duration: .3s;
 	outline: none;
@@ -194,8 +221,8 @@ a.icon-button, a.icon-button:visited {
 	cursor: pointer;
 	-webkit-user-select: none;
 	user-select: none;
-	transition-property: border, background, color, box-shadow, width, height, font-size;
-	-webkit-transition-property: border, background, color, box-shadow, width, height, font-size;
+	transition-property: border, background, color;
+	-webkit-transition-property: border, background, color;
 	transition-duration: .3s;
 	-webkit-transition-duration: .3s;
 	outline: none;
@@ -214,6 +241,105 @@ a.disconnect-button {
     top: 50%;
     margin-top: -22px;
     right: 2em;
+}
+.image-container {
+    display: inline-block;
+    height: 160px;
+    margin: 1px;
+    vertical-align: top;
+}
+.image-container img {
+    max-height: 100%;
+}
+.paginator {
+    text-align: right;
+    margin: 1em 2em;
+}
+.paginator-current-page {
+    line-height: 32px;
+    width: 4em;
+    text-align: center;
+    font-size: 16px;
+    border: 2px solid #ccc;
+    border-radius: 3px;
+}
+.icon-paginator, .icon-paginator:visited {
+    font-size: 32px;
+    color: rgba(136, 176, 75, 1);
+    font-weight: normal;
+    font-style: normal;
+    text-decoration: none !important;
+    text-align: center;
+    border-radius: 3px;
+    box-shadow: none;
+    height: 40px;
+    width: 40px;
+    line-height: 32px;
+    display: inline-block;
+    white-space: nowrap;
+    vertical-align: middle;
+    -ms-touch-action: manipulation;
+    touch-action: manipulation;
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+    transition-property: border, background, color;
+    -webkit-transition-property: border, background, color;
+    transition-duration: .3s;
+    -webkit-transition-duration: .3s;
+    outline: none;
+    overflow: hidden;
+}
+a.icon-paginator:hover, a.icon-paginator:focus {
+	border-color: rgba(187, 194, 52, 1);
+    color: rgba(187, 194, 52, 1);
+}
+a.icon-paginator:active {
+	transform: translateY(2px);
+	-webkit-transform: translateY(2px);
+}
+.icon-paginator-disabled {
+    color: #ccc !important;
+    cursor: default !important;
+}
+.users-container {
+    text-align: center;
+}
+a.user-selector, a.user-selector:visited {
+    color: rgba(136, 176, 75, 1);
+    font-weight: normal;
+    font-style: normal;
+    text-decoration: none !important;
+    text-align: center;
+    border: 3px solid rgba(136, 176, 75, 1);
+    border-radius: 3px;
+    box-shadow: none;
+    height: 44px;
+    min-width: 160px;
+    line-height: 38px;
+    padding: 0 1.8em;
+    display: inline-block;
+    white-space: nowrap;
+    vertical-align: middle;
+    -ms-touch-action: manipulation;
+    touch-action: manipulation;
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+    transition-property: border, background, color;
+    -webkit-transition-property: border, background, color;
+    transition-duration: .3s;
+    -webkit-transition-duration: .3s;
+    outline: none;
+    overflow: hidden;
+}
+a.user-selector:hover, a.user-selector:focus {
+	border-color: rgba(187, 194, 52, 1);
+    color: rgba(187, 194, 52, 1);
+}
+a.user-selector:active {
+	transform: translateY(2px);
+	-webkit-transform: translateY(2px);
 }
 #global-message {
 	position: fixed;

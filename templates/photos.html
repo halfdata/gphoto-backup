@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content_wrapper_class %}content-wrapper-wide{% endblock %}
+{% set active_menu_item = 'browser' %}
+
+{% block content %}
+    {% if mediaitems %}
+        {% if total_pages > 1 %}
+        <div class="paginator">
+            {% if page == 1 %}
+            <span class="icon-paginator icon-paginator-disabled" title="First page"><i class="icon icon-angle-double-left"></i></span>
+            <span class="icon-paginator icon-paginator-disabled" title="Previous page"><i class="icon icon-angle-left"></i></span>
+            {% else %}
+            <a class="icon-paginator" href="{{ url_for('user_mediaitems', user_id=user.id, page=1) }}" title="First page"><i class="icon icon-angle-double-left"></i></a>
+            <a class="icon-paginator" href="{{ url_for('user_mediaitems', user_id=user.id, page=page-1) }}" title="Previous page"><i class="icon icon-angle-left"></i></a>
+            {% endif %}
+            <input class="paginator-current-page" value="{{ page }}" max-value="{{ total_pages }}" /> of {{ total_pages }}
+            {% if page == total_pages %}
+            <span class="icon-paginator icon-paginator-disabled" title="Next page"><i class="icon icon-angle-right"></i></span>
+            <span class="icon-paginator icon-paginator-disabled" title="Last page"><i class="icon icon-angle-double-right"></i></span>
+            {% else %}
+            <a class="icon-paginator" href="{{ url_for('user_mediaitems', user_id=user.id, page=page+1) }}" title="Next page"><i class="icon icon-angle-right"></i></a>
+            <a class="icon-paginator" href="{{ url_for('user_mediaitems', user_id=user.id, page=total_pages) }}" title="Last page"><i class="icon icon-angle-double-right"></i></a>
+            {% endif %}
+        </div>
+        {% endif %}
+        <div class="images-container">
+            {% for mediaitem in mediaitems %}<div class="image-container"><a href="{{ url_for('library_mediaitem', user_id=user.id, mediaitem_id=mediaitem.id) }}"><img style="height: 160px; width:{{ (160*mediaitem.width/mediaitem.height)|int() }}px" src="{{ url_for('library_thumbnail', user_id=user.id, mediaitem_id=mediaitem.id) }}" /></a></div>{% endfor %}
+        </div>
+        <script>
+            var inputs = document.getElementsByClassName('paginator-current-page')
+            for (var i=0; i<inputs.length; i++) {
+                inputs[i].addEventListener("keyup", (event) => {
+                    var input = event.target || event.srcElement;
+                    var max_value = parseInt(input.getAttribute('max-value'))
+                    var value_str = input.value;
+                    if (isNaN(value_str) || isNaN(parseInt(value_str)) && value_str != '') {
+                        input.value = 1
+                        return
+                    }
+                    value = parseInt(value_str)
+                    if (value < 1) {
+                        value = 1
+                        input.value = 1
+                    } else if (value > max_value) {
+                        value = max_value
+                        input.value = max_value
+                    }
+                    if (event.keyCode == 10 || event.keyCode == 13) {
+                        window.location.href = "{{ url_for('user_mediaitems', user_id=user.id) }}/" + value;
+                    }
+                });
+            }
+        </script>
+    {% else %}
+    <div class="users-container">
+        <p>No media items found. Seems this user never created backup. ;-)</p>
+    </div>
+    {% endif %}
+{% endblock %}
