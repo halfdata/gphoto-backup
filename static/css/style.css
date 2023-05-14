@@ -375,6 +375,17 @@ footer {
     line-height: 60px;
 	font-size: 0.8em;
 }
+.page-404 {
+    text-align: center;
+    color: #ccc;
+}
+.page-404 h2 {
+    font-size: 192px;
+    line-height: 192px;
+    margin: 0;
+    padding: 0;
+}
+
 @media only screen and (max-width: 640px) {
     .paginator {
         text-align: center;

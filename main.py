@@ -147,11 +147,11 @@ def user_mediaitems(user_id: int, page: int = 1):
     """Explore media items."""
     user = db.get_user_by(id=user_id)
     if not user:
-        return 'User not found.'
+        return flask.abort(404, 'User not found.')
     total_mediaitems = db.get_user_mediaitems_total(user_id=user.id)
     total_pages = max(1, math.ceil(total_mediaitems/utils.ITEMS_PER_PAGE))
     if page > total_pages or page < 1:
-        return 'Page not found.'
+        return flask.abort(404, 'Page not found.')
     mediaitems = db.get_user_mediaitems(user_id=user.id,
                                         offset=(page - 1) * utils.ITEMS_PER_PAGE,
                                         number=utils.ITEMS_PER_PAGE)
@@ -166,18 +166,18 @@ def user_mediaitems(user_id: int, page: int = 1):
 def library_thumbnail(user_id: int, mediaitem_id: int):
     user = db.get_user_by(id=user_id)
     if not user:
-        return 'User not found.'
+        return flask.abort(404, 'User not found.')
     mediaitem = db.get_user_mediaitem_by(user_id=user_id, id=mediaitem_id)
     if not mediaitem:
-        return 'No mediaitem.'
+        return flask.abort(404, 'Media item not found.')
     if not mediaitem.thumbnail:
-        return 'No thumbnail.'
+        return flask.abort(404, 'Thumbnail not found.')
     abs_path_thumbnail = os.path.abspath(os.path.join(STORAGE_PATH,
                                                       user.email,
                                                       utils.THUMBNAILS_FOLDER,
                                                       mediaitem.thumbnail))
     if not os.path.exists(abs_path_thumbnail):
-        return 'No thumbnail.'
+        return flask.abort(404, 'Thumbnail not found.')
     return flask.send_from_directory(os.path.dirname(abs_path_thumbnail),
                                      os.path.basename(abs_path_thumbnail))
 
@@ -186,19 +186,25 @@ def library_thumbnail(user_id: int, mediaitem_id: int):
 def library_mediaitem(user_id, mediaitem_id):
     user = db.get_user_by(id=user_id)
     if not user:
-        return 'User not found.'
+        return flask.abort(404, 'User not found.')
     mediaitem = db.get_user_mediaitem_by(user_id=user_id, id=mediaitem_id)
     if not mediaitem:
-        return 'No mediaitem.'
+        return flask.abort(404, 'Media item not found.')
     if not mediaitem.filename:
-        return 'No mediaitem.'
+        return flask.abort(404, 'Media item not found.')
     abs_path_filename = os.path.abspath(os.path.join(STORAGE_PATH,
                                                       user.email,
                                                       mediaitem.filename))
     if not os.path.exists(abs_path_filename):
-        return 'No mediaitem.'
+        return flask.abort(404, 'Media item not found.')
     return flask.send_from_directory(os.path.dirname(abs_path_filename),
                                      os.path.basename(abs_path_filename))
+
+
+@app.errorhandler(404)
+def not_found(e):
+    """Not Found page."""
+    return flask.render_template('404.html'), 404
 
 
 if __name__ == '__main__':
