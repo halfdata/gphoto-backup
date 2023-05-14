@@ -1,3 +1,3 @@
 """Some app settings."""
 
-STORAGE_PATH = 'f:\\Google Photos'
+STORAGE_PATH = 'archive'
