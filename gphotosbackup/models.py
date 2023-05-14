@@ -11,9 +11,10 @@ from sqlalchemy import select, insert, update, delete
 class DB:
     """Definition of database tables."""
     metadata_obj: MetaData = MetaData()
-    engine: Engine = create_engine("sqlite:///db.sqlite3")
+    engine: Engine
 
-    def __init__(self):
+    def __init__(self, database_url: str = 'sqlite:///db.sqlite3'):
+        self.engine = create_engine(database_url)
         self._define_db_tables()
         self.metadata_obj.create_all(self.engine)
 

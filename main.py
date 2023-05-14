@@ -8,6 +8,7 @@ import google_auth_oauthlib.flow
 import google.oauth2.credentials
 import googleapiclient.discovery
 import oauthlib.oauth2.rfc6749.errors
+import settings
 
 from typing import Any
 from gphotosbackup import models, utils
@@ -17,11 +18,11 @@ CLIENT_SECRETS_FILE = "client_secret.json"
 SCOPES = ['openid',
           'https://www.googleapis.com/auth/photoslibrary.readonly',
           'https://www.googleapis.com/auth/userinfo.email']
-STORAGE_PATH = 'archive'
 
 app = flask.Flask(__name__)
 app.secret_key = 'NOT REALLY NEEDED FOR LOCAL USAGE!'
-db = models.DB()
+os.makedirs(os.path.abspath(settings.STORAGE_PATH), exist_ok=True)
+db = models.DB(f'sqlite:///{settings.STORAGE_PATH}/db.sqlite3')
 global_crawler_lock = threading.Event()
 
 def authorized_user(func):
@@ -72,7 +73,7 @@ def run():
                                    credentials=credentials,
                                    update_credentials_callback=update_credentials,
                                    db=db,
-                                   storage_path=STORAGE_PATH)
+                                   storage_path=settings.STORAGE_PATH)
 
     return flask.Response(gphotos_backup.run(),
                           content_type='text/event-stream')
@@ -195,7 +196,7 @@ def library_thumbnail(user_id: int, mediaitem_id: int):
         return flask.abort(404, 'Media item not found.')
     if not mediaitem.thumbnail:
         return flask.abort(404, 'Thumbnail not found.')
-    abs_path_thumbnail = os.path.abspath(os.path.join(STORAGE_PATH,
+    abs_path_thumbnail = os.path.abspath(os.path.join(settings.STORAGE_PATH,
                                                       user.email,
                                                       utils.THUMBNAILS_FOLDER,
                                                       mediaitem.thumbnail))
@@ -215,9 +216,9 @@ def library_mediaitem(user_id, mediaitem_id):
         return flask.abort(404, 'Media item not found.')
     if not mediaitem.filename:
         return flask.abort(404, 'Media item not found.')
-    abs_path_filename = os.path.abspath(os.path.join(STORAGE_PATH,
-                                                      user.email,
-                                                      mediaitem.filename))
+    abs_path_filename = os.path.abspath(os.path.join(settings.STORAGE_PATH,
+                                                     user.email,
+                                                     mediaitem.filename))
     if not os.path.exists(abs_path_filename):
         return flask.abort(404, 'Media item not found.')
     return flask.send_from_directory(os.path.dirname(abs_path_filename),
