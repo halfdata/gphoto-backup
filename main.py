@@ -1,4 +1,5 @@
 import flask
+import functools
 import math
 import os
 import requests
@@ -8,6 +9,7 @@ import google.oauth2.credentials
 import googleapiclient.discovery
 import oauthlib.oauth2.rfc6749.errors
 
+from typing import Any
 from gphotosbackup import models, utils
 from gphotosbackup import GPhotosBackup
 
@@ -22,8 +24,20 @@ app.secret_key = 'NOT REALLY NEEDED FOR LOCAL USAGE!'
 db = models.DB()
 global_crawler_lock = threading.Event()
 
+def authorized_user(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        authorized_user = None
+        if 'user_id' in flask.session:
+            authorized_user = db.get_user_by(id=flask.session['user_id'])
+        result = func(*args, **kwargs, authorized_user=authorized_user)
+        return result
+    return wrapper
+
+
 @app.route("/")
-def index():
+@authorized_user
+def index(authorized_user: Any):
     warning = None
     if 'warning' in flask.session:
         warning = flask.session['warning']
@@ -32,13 +46,14 @@ def index():
         return flask.render_template('login.html', warning=warning)
     if 'credentials' not in flask.session:
         return flask.render_template('login.html', warning=warning)
-    user_record = db.get_user_by(id=flask.session['user_id'])
-    if not user_record:
+    if not authorized_user:
         del flask.session['user_id']
         del flask.session['credentials']
         return flask.render_template('login.html', warning='User not found.')
     
-    return flask.render_template('index.html', authorized_user=user_record, warning=warning)
+    return flask.render_template('index.html', 
+                                 authorized_user=authorized_user,
+                                 warning=warning)
 
 
 @app.route("/run")
@@ -136,15 +151,22 @@ def callback():
 
 
 @app.route('/mediaitems')
-def users():
+@authorized_user
+def users(authorized_user: Any):
     """Explore photos."""
     users = db.get_users()
-    return flask.render_template('users.html', users=users)
+    return flask.render_template('users.html',
+                                 authorized_user=authorized_user,
+                                 users=users)
 
 @app.route('/mediaitems/<int:user_id>')
 @app.route('/mediaitems/<int:user_id>/<int:page>')
-def user_mediaitems(user_id: int, page: int = 1):
+@authorized_user
+def user_mediaitems(authorized_user: Any, user_id: int, page: int = 1):
     """Explore media items."""
+    authorized_user = None
+    if 'user_id' in flask.session:
+        authorized_user = db.get_user_by(id=flask.session['user_id'])
     user = db.get_user_by(id=user_id)
     if not user:
         return flask.abort(404, 'User not found.')
@@ -156,6 +178,7 @@ def user_mediaitems(user_id: int, page: int = 1):
                                         offset=(page - 1) * utils.ITEMS_PER_PAGE,
                                         number=utils.ITEMS_PER_PAGE)
     return flask.render_template('photos.html',
+                                 authorized_user=authorized_user,
                                  mediaitems=mediaitems,
                                  user=user,
                                  page=page,
