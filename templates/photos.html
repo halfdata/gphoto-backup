@@ -9,7 +9,13 @@
             {% include 'paginator.html' %}
         {% endif %}
         <div class="images-container">
-            {% for mediaitem in mediaitems %}<div class="image-container"><a href="{{ url_for('library_mediaitem', user_id=user.id, mediaitem_id=mediaitem.id) }}"><img style="height: 160px; width:{{ (160*mediaitem.width/mediaitem.height)|int() }}px" src="{{ url_for('library_thumbnail', user_id=user.id, mediaitem_id=mediaitem.id) }}" /></a></div>{% endfor %}
+            {% for mediaitem in mediaitems %}
+                <div class="image-container">
+                    <a href="{{ url_for('library_mediaitem', user_id=user.id, mediaitem_id=mediaitem.id) }}">
+                        <img style="height: 160px; width:{{ (160*mediaitem.width/mediaitem.height)|int() }}px" src="{{ url_for('library_thumbnail', user_id=user.id, mediaitem_id=mediaitem.id) }}" />
+                    </a>
+                </div>
+            {% endfor %}
         </div>
         {% if total_pages > 1 %}
             {% include 'paginator.html' %}

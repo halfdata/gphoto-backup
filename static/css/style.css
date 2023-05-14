@@ -235,8 +235,12 @@ a.disconnect-button {
     margin-top: -22px;
     right: 2em;
 }
+.images-container {
+    overflow: hidden;
+    height: auto;
+}
 .image-container {
-    display: inline-block;
+    float: left;
     height: 160px;
     margin: 1px;
     vertical-align: top;
@@ -393,6 +397,7 @@ footer {
     .image-container {
         height: auto;
         display: block;
+        float: none;
     }
     .image-container img {
         height: auto !important;
