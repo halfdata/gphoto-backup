@@ -227,32 +227,33 @@ class GPhotosBackup:
             print('Downloading media items terminated. Run script again to continue.')
             with utils.disable_exception_traceback():
                 raise
-        if 'mediaItems' not in response:
-            print('No mediaItems node in response.')
+        if 'mediaItems' not in response and 'nextPageToken' not in response:
+            print('No mediaItems and nextPageToken nodes in response.')
             raise errors.InvalidResponse()
-        files_to_download = []
-        for item in response['mediaItems']:
-            result = self.set_mediaitem(item)
-            if album:
-                albumitem = self.db.get_albumitem_by(album_uid=album,
-                                                     mediaitem_uid=result.mediaitem_uid)
-                if albumitem:
-                    self.db.update_albumitem(id=albumitem.id,
-                                             last_seen=self.current_cycle)
-                else:
-                    self.db.add_albumitem(album_uid=album,
-                                          mediaitem_uid=result.mediaitem_uid,
-                                          last_seen=self.current_cycle)
-            files_to_download.append(result)
+        if 'mediaItems' in response:
+            files_to_download = []
+            for item in response['mediaItems']:
+                result = self.set_mediaitem(item)
+                if album:
+                    albumitem = self.db.get_albumitem_by(album_uid=album,
+                                                        mediaitem_uid=result.mediaitem_uid)
+                    if albumitem:
+                        self.db.update_albumitem(id=albumitem.id,
+                                                last_seen=self.current_cycle)
+                    else:
+                        self.db.add_albumitem(album_uid=album,
+                                            mediaitem_uid=result.mediaitem_uid,
+                                            last_seen=self.current_cycle)
+                files_to_download.append(result)
 
-        with ThreadPoolExecutor(max_workers=5) as executor:
-            try:
-                for _ in executor.map(self.handle_mediaitem, files_to_download):
-                    pass
-            except KeyboardInterrupt:
-                print('Downloading media items terminated. Run script again to continue.')
-                with utils.disable_exception_traceback():
-                    raise
+            with ThreadPoolExecutor(max_workers=5) as executor:
+                try:
+                    for _ in executor.map(self.handle_mediaitem, files_to_download):
+                        pass
+                except KeyboardInterrupt:
+                    print('Downloading media items terminated. Run script again to continue.')
+                    with utils.disable_exception_traceback():
+                        raise
 
         if 'nextPageToken' in response:
             self.db.set_user_option(self.user.id,
