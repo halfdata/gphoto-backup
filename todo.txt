@@ -3,5 +3,5 @@
 - Downloading albums - DONE.
 - Autoscrolling of iframe to the bottom - DONE.
 - Preview of media items and albums - PARTIALLY DONE.
-- Add 404 page.
+- Add 404 page - DONE.
 - Run script in Docker.

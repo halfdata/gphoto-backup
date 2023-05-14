@@ -239,6 +239,19 @@ a.disconnect-button {
     overflow: hidden;
     height: auto;
 }
+.date-container {
+    clear: both;
+    padding: 1em 0 0.5em 0;
+    font-weight: bold;
+    color: #666;
+}
+.date-container span {
+    font-weight: normal;
+    font-size: 0.8em;
+    color: #ccc;
+    display: inline-block;
+    margin-left: 0.5em;
+}
 .image-container {
     float: left;
     height: 160px;
