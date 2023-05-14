@@ -66,7 +66,7 @@ def convert_iso_to_timestamp(iso_time: str) -> Optional[int]:
         return None
     return datetime.fromisoformat(iso_time[:19]).timestamp()
 
-def download_file(url: str, filename: str, filetime: Optional[str] = None) -> None:
+def download_file(url: str, filename: str, filetime: Optional[str] = None) -> bool:
     """Download file."""
     try:
         with requests.get(url, timeout=(5, None), stream=True) as r:
@@ -74,9 +74,15 @@ def download_file(url: str, filename: str, filetime: Optional[str] = None) -> No
             with open(filename, 'wb') as f:
                 shutil.copyfileobj(r.raw, f)
             os.utime(filename, times=(filetime, filetime))
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 404:
+            return False
+        with disable_exception_traceback():
+            raise
     except Exception:
         if os.path.exists(filename):
             print(f'{filename} - failed to download')
             os.remove(filename)
         with disable_exception_traceback():
             raise
+    return True

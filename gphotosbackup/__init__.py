@@ -187,9 +187,10 @@ class GPhotosBackup:
             full_filename = os.path.abspath(os.path.join(self.storage_path,
                 self.user.email, download_info.filename))
             os.makedirs(os.path.dirname(full_filename), exist_ok=True)
-            utils.download_file(url=filename_url,
-                                filename=full_filename,
-                                filetime = filetime)
+            if not utils.download_file(url=filename_url, filename=full_filename,
+                                       filetime = filetime):
+                self.log_queue.put(f'{download_info.original_filename} - not available')
+                return
             self.log_queue.put(f'{download_info.original_filename} - file downloaded')
 
         thumbnail_url = (f'{download_info.base_url}=w{THUMBNAIL_SIZE}-h{THUMBNAIL_SIZE}'
