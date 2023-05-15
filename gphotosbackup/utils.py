@@ -8,7 +8,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Optional
+from typing import Optional, Any, Tuple
 
 
 THUMBNAILS_FOLDER = 'thumbnails'
@@ -66,7 +66,8 @@ def convert_iso_to_timestamp(iso_time: str) -> Optional[int]:
         return None
     return datetime.fromisoformat(iso_time[:19]).timestamp()
 
-def download_file(url: str, filename: str, filetime: Optional[str] = None) -> bool:
+def download_file(url: str, filename: str,
+                  filetime: Optional[str] = None) -> Tuple[int, Any]:
     """Download file."""
     try:
         with requests.get(url, timeout=(5, None), stream=True) as r:
@@ -75,14 +76,11 @@ def download_file(url: str, filename: str, filetime: Optional[str] = None) -> bo
                 shutil.copyfileobj(r.raw, f)
             os.utime(filename, times=(filetime, filetime))
     except requests.exceptions.HTTPError as e:
-        if e.response.status_code == 404:
-            return False
-        with disable_exception_traceback():
-            raise
+        return e.response.status_code, e
     except Exception:
         if os.path.exists(filename):
             print(f'{filename} - failed to download')
             os.remove(filename)
         with disable_exception_traceback():
             raise
-    return True
+    return 200, None
