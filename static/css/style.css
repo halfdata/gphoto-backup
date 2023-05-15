@@ -18,6 +18,7 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
+.icon-play:before { content: '\e800'; }
 .icon-logout:before { content: '\e801'; }
 .icon-angle-double-left:before { content: '\f100'; }
 .icon-angle-double-right:before { content: '\f101'; }
@@ -257,6 +258,34 @@ a.disconnect-button {
     height: 160px;
     margin: 1px;
     vertical-align: top;
+}
+.image-container a {
+    display: block;
+    background-repeat: no-repeat;
+    background-position: 50% 50%;
+    background-size: cover;
+    position: relative;
+}
+.image-container a span {
+    position: absolute;
+    width: 52px;
+    height: 52px;
+    top: 50%;
+    left: 50%;
+    margin-top: -26px;
+    margin-left: -26px;
+    display: block;
+    border: 4px solid rgba(255,255,255,0.4);
+    border-radius: 50%;
+    line-height: 44px;
+    text-align: center;
+    font-size: 28px;
+    padding-left: 4px;
+    color: rgba(255,255,255,0.4);
+}
+.image-container a:hover span {
+    color: rgba(255,255,255,0.5);
+    border: 4px solid rgba(255,255,255,0.5);
 }
 .image-container img {
     max-height: 100%;
