@@ -27,8 +27,10 @@
                     </div>
                 {% endif %}
                 <div class="image-container">
-                    <a href="{{ url_for('library_mediaitem', user_id=user.id, mediaitem_id=mediaitem.id) }}">
-                        <img style="height: 160px; width:{{ (160*(mediaitem.width or 1)/(mediaitem.height or 1))|int() }}px" src="{{ url_for('library_thumbnail', user_id=user.id, mediaitem_id=mediaitem.id) }}" />
+                    <a href="{{ url_for('library_mediaitem', user_id=user.id, mediaitem_id=mediaitem.id) }}" style="height: 160px; width:{{ (160*(mediaitem.width or 1)/(mediaitem.height or 1))|int() }}px; background-image: url({{ url_for('library_thumbnail', user_id=user.id, mediaitem_id=mediaitem.id) }});">
+                    {% if mediaitem.type == 'video' %}
+                        <span><i class="icon icon-play"></i></span>
+                    {% endif %}
                     </a>
                 </div>
             {% endfor %}
