@@ -187,10 +187,20 @@ class GPhotosBackup:
             full_filename = os.path.abspath(os.path.join(self.storage_path,
                 self.user.email, download_info.filename))
             os.makedirs(os.path.dirname(full_filename), exist_ok=True)
-            if not utils.download_file(url=filename_url, filename=full_filename,
-                                       filetime = filetime):
+            status, error = utils.download_file(url=filename_url,
+                filename=full_filename, filetime = filetime)
+            if status == 404:
                 self.log_queue.put(f'{download_info.original_filename} - not available')
                 return
+            elif status == 429:
+                print('The rate limit for this service has been exceeded. Try again in 24 hours.')
+                self.log_queue.put('The rate limit for this service has been exceeded. '
+                                   'Try again in 24 hours.')
+                with utils.disable_exception_traceback():
+                    raise error
+            elif status != 200:
+                with utils.disable_exception_traceback():
+                    raise error
             self.log_queue.put(f'{download_info.original_filename} - file downloaded')
 
         thumbnail_url = (f'{download_info.base_url}=w{THUMBNAIL_SIZE}-h{THUMBNAIL_SIZE}'
@@ -198,9 +208,12 @@ class GPhotosBackup:
         full_thumbnail = os.path.abspath(os.path.join(self.storage_path,
             self.user.email, utils.THUMBNAILS_FOLDER, download_info.thumbnail))
         os.makedirs(os.path.dirname(full_thumbnail), exist_ok=True)
-        utils.download_file(url=thumbnail_url,
-                            filename=full_thumbnail,
-                            filetime = filetime)
+        status, error = utils.download_file(url=thumbnail_url,
+                                            filename=full_thumbnail,
+                                            filetime = filetime)
+        if status != 200:
+            with utils.disable_exception_traceback():
+                raise error
         if download_info.download_status == utils.DownloadStatus.THUMBNAIL_ONLY:
             self.log_queue.put(f'{download_info.original_filename} - thumbnail downloaded')
 

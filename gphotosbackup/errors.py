@@ -7,5 +7,6 @@ class InvalidResponse(Exception):
 class UnknownBackupStage(Exception):
     """Raises when unknown backup stage detected."""
 
+
 class AlbumNotFound(Exception):
     """Raises when album not found in DB."""
