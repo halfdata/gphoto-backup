@@ -187,8 +187,10 @@ class GPhotosBackup:
             full_filename = os.path.abspath(os.path.join(self.storage_path,
                 self.user.email, download_info.filename))
             os.makedirs(os.path.dirname(full_filename), exist_ok=True)
+            start_downloading_time = time.time()
             status, error = utils.download_file(url=filename_url,
                 filename=full_filename, filetime = filetime)
+            end_downloading_time = time.time()
             if status == 404:
                 self.log_queue.put(f'{download_info.original_filename} - not available')
                 return
@@ -201,7 +203,8 @@ class GPhotosBackup:
             elif status != 200:
                 with utils.disable_exception_traceback():
                     raise error
-            self.log_queue.put(f'{download_info.original_filename} - file downloaded')
+            self.log_queue.put(f'{download_info.original_filename} - file downloaded '
+                               f'({(end_downloading_time - start_downloading_time):.3f}s)')
 
         thumbnail_url = (f'{download_info.base_url}=w{THUMBNAIL_SIZE}-h{THUMBNAIL_SIZE}'
                          f'{"-no" if download_info.item_type == "video" else ""}')

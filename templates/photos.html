@@ -12,28 +12,35 @@
         {% if total_pages > 1 %}
             {% include 'paginator.html' %}
         {% endif %}
-        <div class="images-container">
+        <div class="mediaitems-container">
             {% set active_date = {'date': ''} %}
             {% for mediaitem in mediaitems %}
                 {% set current_date = mediaitem.creation_time[0:10] %}
                 {% if current_date != active_date['date'] %}
+                    {% if active_date['date'] != '' %}
+            </div>
+                    {% endif %}
                     {% if active_date.update({'date': current_date}) %}{% endif %}
                     {% set date_parts = current_date.split('-') %}
-                    <div class="date-container">
-                        {{ months.get(date_parts[1], 'Unknown') }}
-                        {{ date_parts[2] }},
-                        {{ date_parts[0] }}
-                        <span>({{ current_date }})</span>
-                    </div>
+            <div class="date-container">
+                {{ months.get(date_parts[1], 'Unknown') }}
+                {{ date_parts[2] }},
+                {{ date_parts[0] }}
+                <span>({{ current_date }})</span>
+            </div>
+            <div class="images-container">
                 {% endif %}
-                <div class="image-container">
-                    <a href="{{ url_for('library_mediaitem', user_id=user.id, mediaitem_id=mediaitem.id) }}" style="height: 160px; width:{{ (160*(mediaitem.width or 1)/(mediaitem.height or 1))|int() }}px; background-image: url({{ url_for('library_thumbnail', user_id=user.id, mediaitem_id=mediaitem.id) }});">
+                <div class="image-container" style="height:160px;width:{{ (160*(mediaitem.width or 1)/(mediaitem.height or 1))|int() }}px;background-image:url({{ url_for('library_thumbnail', user_id=user.id, mediaitem_id=mediaitem.id) }});">
+                    <a href="{{ url_for('library_mediaitem', user_id=user.id, mediaitem_id=mediaitem.id) }}">
                     {% if mediaitem.type == 'video' %}
                         <span><i class="icon icon-play"></i></span>
                     {% endif %}
                     </a>
                 </div>
             {% endfor %}
+            {% if active_date['date'] != '' %}
+            </div>
+            {% endif %}
         </div>
         {% if total_pages > 1 %}
             {% include 'paginator.html' %}
