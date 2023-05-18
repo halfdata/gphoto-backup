@@ -292,9 +292,6 @@ a.disconnect-button {
     color: rgba(255,255,255,0.5);
     border: 4px solid rgba(255,255,255,0.5);
 }
-.image-container img {
-    max-height: 100%;
-}
 .paginator {
     text-align: right;
     margin: 1em 2em;
@@ -440,15 +437,6 @@ footer {
 @media only screen and (max-width: 640px) {
     .paginator {
         text-align: center;
-    }
-    .image-container {
-        height: auto;
-        display: block;
-        float: none;
-    }
-    .image-container img {
-        height: auto !important;
-        width: 100% !important;
     }
     ul.menu {
         width: auto;
