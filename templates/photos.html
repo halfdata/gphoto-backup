@@ -2,11 +2,21 @@
 
 {% block content_wrapper_class %}content-wrapper-wide{% endblock %}
 {% set active_menu_item = 'browser' %}
-{% set subheader = user.email + "'s media" %}
+{% set submenu = True %}
 {% set months = {'01': 'January', '02': 'February', '03': 'March', '04': 'April',
                  '05': 'May', '06': 'June', '07': 'July', '08': 'August',
                  '09': 'September', '10': 'October', '11': 'November',
                  '12': 'December'} %}
+{% if album %}
+    {% set base_url = url_for('user_albumitems', user_id=user.id, album_id=album.id) %}
+    {% set active_submenu_item = 'albums' %}
+    {% set subheader = user.email + "'s album '" + album.title + "'"  %}
+{% else %}
+    {% set base_url = url_for('user_mediaitems', user_id=user.id) %}
+    {% set active_submenu_item = 'mediaitems' %}
+    {% set subheader = user.email + "'s media" %}
+{% endif %}
+
 {% block content %}
     {% if mediaitems %}
         {% if total_pages > 1 %}
@@ -30,7 +40,7 @@
             </div>
             <div class="images-container">
                 {% endif %}
-                <div class="image-container" style="height:160px;width:{{ (160*(mediaitem.width or 1)/(mediaitem.height or 1))|int() }}px;background-image:url({{ url_for('library_thumbnail', user_id=user.id, mediaitem_id=mediaitem.id) }});">
+                <div class="image-container" style="aspect-ratio:{{ ((mediaitem.width or 1)/(mediaitem.height or 1))|float() }};background-image:url({{ url_for('library_thumbnail', user_id=user.id, mediaitem_id=mediaitem.id) }});">
                     <a href="{{ url_for('library_mediaitem', user_id=user.id, mediaitem_id=mediaitem.id) }}">
                     {% if mediaitem.type == 'video' %}
                         <span><i class="icon icon-play"></i></span>

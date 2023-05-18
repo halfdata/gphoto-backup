@@ -151,7 +151,7 @@ def callback():
     return flask.redirect(flask.url_for('index'))
 
 
-@app.route('/mediaitems')
+@app.route('/users')
 @authorized_user
 def users(authorized_user: Any):
     """Explore photos."""
@@ -160,14 +160,11 @@ def users(authorized_user: Any):
                                  authorized_user=authorized_user,
                                  users=users)
 
-@app.route('/mediaitems/<int:user_id>')
-@app.route('/mediaitems/<int:user_id>/<int:page>')
+@app.route('/users/<int:user_id>/mediaitems')
+@app.route('/users/<int:user_id>/mediaitems/<int:page>')
 @authorized_user
 def user_mediaitems(authorized_user: Any, user_id: int, page: int = 1):
     """Explore media items."""
-    authorized_user = None
-    if 'user_id' in flask.session:
-        authorized_user = db.get_user_by(id=flask.session['user_id'])
     user = db.get_user_by(id=user_id)
     if not user:
         return flask.abort(404, 'User not found.')
@@ -184,6 +181,58 @@ def user_mediaitems(authorized_user: Any, user_id: int, page: int = 1):
                                  user=user,
                                  page=page,
                                  total_pages=total_pages)
+
+
+@app.route('/users/<int:user_id>/albums')
+@app.route('/users/<int:user_id>/albums/<int:page>')
+@authorized_user
+def user_albums(authorized_user: Any, user_id: int, page: int = 1):
+    """Explore albums."""
+    user = db.get_user_by(id=user_id)
+    if not user:
+        return flask.abort(404, 'User not found.')
+    total_albums = db.get_user_albums_total(user_id=user.id)
+    total_pages = max(1, math.ceil(total_albums/utils.ITEMS_PER_PAGE))
+    if page > total_pages or page < 1:
+        return flask.abort(404, 'Page not found.')
+    albums = db.get_user_albums(user_id=user.id,
+                                offset=(page - 1) * utils.ITEMS_PER_PAGE,
+                                number=utils.ITEMS_PER_PAGE)
+    return flask.render_template('albums.html',
+                                 authorized_user=authorized_user,
+                                 albums=albums,
+                                 user=user,
+                                 page=page,
+                                 total_pages=total_pages)
+
+
+@app.route('/users/<int:user_id>/albums/<int:album_id>/mediaitems')
+@app.route('/users/<int:user_id>/albums/<int:album_id>/mediaitems/<int:page>')
+@authorized_user
+def user_albumitems(authorized_user: Any, user_id: int, album_id: int,
+                    page: int = 1):
+    """Explore album items."""
+    user = db.get_user_by(id=user_id)
+    if not user:
+        return flask.abort(404, 'User not found.')
+    album = db.get_user_album_by(user_id=user.id, id=album_id)
+    if not album:
+        return flask.abort(404, 'Album not found.')
+
+    total_albumitems = db.get_albumitems_total(album_uid=album.album_uid)
+    total_pages = max(1, math.ceil(total_albumitems/utils.ITEMS_PER_PAGE))
+    if page > total_pages or page < 1:
+        return flask.abort(404, 'Page not found.')
+    mediaitems = db.get_albumitems(album_uid=album.album_uid,
+                                   offset=(page - 1) * utils.ITEMS_PER_PAGE,
+                                   number=utils.ITEMS_PER_PAGE)
+    return flask.render_template('photos.html',
+                                 authorized_user=authorized_user,
+                                 mediaitems=mediaitems,
+                                 user=user,
+                                 page=page,
+                                 total_pages=total_pages,
+                                 album=album)
 
 
 @app.route('/library/<int:user_id>/thumbnails/<int:mediaitem_id>')
