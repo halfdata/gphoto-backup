@@ -18,10 +18,20 @@
             {% endif %}
             <h1>Google Photos Backup{% if authorized_user %}<span>{{ authorized_user.email }}</span>{% endif %}</h1>
         </header>
-        <ul class="menu">
-            <li class="{% if active_menu_item == 'backup' %}menu-item-active{% endif %}"><a href="{{ url_for('index') }}">Create Backup</a></li>
-            <li class="{% if active_menu_item == 'browser' %}menu-item-active{% endif %}"><a href="{{ url_for('users') }}">Browse Downloaded Media</a></li>
-        </ul>
+        <div class="menu">
+            <ul>
+                <li class="{% if active_menu_item == 'backup' %}menu-item-active{% endif %}"><a href="{{ url_for('index') }}">Create Backup</a></li>
+                <li class="{% if active_menu_item == 'browser' %}menu-item-active{% endif %}"><a href="{{ url_for('users') }}">Browse Downloaded Media</a></li>
+            </ul>
+        </div>
+        {% if submenu %}
+        <div class="submenu">
+            <ul>
+                <li class="{% if active_submenu_item == 'mediaitems' %}menu-item-active{% endif %}"><a href="{{ url_for('user_mediaitems', user_id=user.id) }}">Media Items</a></li>
+                <li class="{% if active_submenu_item == 'albums' %}menu-item-active{% endif %}"><a href="{{ url_for('user_albums', user_id=user.id) }}">Albums</a></li>
+            </ul>
+        </div>
+        {% endif %}
         <div class="content-wrapper {% block content_wrapper_class %}{% endblock %}">
             {% if subheader %}<h3 class="centered">{{ subheader }}</h3>{% endif %}
             <div class="content">

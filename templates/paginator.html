@@ -3,15 +3,15 @@
     <span class="icon-paginator icon-paginator-disabled" title="First page"><i class="icon icon-angle-double-left"></i></span>
     <span class="icon-paginator icon-paginator-disabled" title="Previous page"><i class="icon icon-angle-left"></i></span>
     {% else %}
-    <a class="icon-paginator" href="{{ url_for('user_mediaitems', user_id=user.id, page=1) }}" title="First page"><i class="icon icon-angle-double-left"></i></a>
-    <a class="icon-paginator" href="{{ url_for('user_mediaitems', user_id=user.id, page=page-1) }}" title="Previous page"><i class="icon icon-angle-left"></i></a>
+    <a class="icon-paginator" href="{{ base_url }}/1" title="First page"><i class="icon icon-angle-double-left"></i></a>
+    <a class="icon-paginator" href="{{ base_url }}/{{ page-1 }}" title="Previous page"><i class="icon icon-angle-left"></i></a>
     {% endif %}
     <input class="paginator-current-page" value="{{ page }}" max-value="{{ total_pages }}" /> of {{ total_pages }}
     {% if page == total_pages %}
     <span class="icon-paginator icon-paginator-disabled" title="Next page"><i class="icon icon-angle-right"></i></span>
     <span class="icon-paginator icon-paginator-disabled" title="Last page"><i class="icon icon-angle-double-right"></i></span>
     {% else %}
-    <a class="icon-paginator" href="{{ url_for('user_mediaitems', user_id=user.id, page=page+1) }}" title="Next page"><i class="icon icon-angle-right"></i></a>
-    <a class="icon-paginator" href="{{ url_for('user_mediaitems', user_id=user.id, page=total_pages) }}" title="Last page"><i class="icon icon-angle-double-right"></i></a>
+    <a class="icon-paginator" href="{{ base_url }}/{{ page+1 }}" title="Next page"><i class="icon icon-angle-right"></i></a>
+    <a class="icon-paginator" href="{{ base_url }}/{{ total_pages }}" title="Last page"><i class="icon icon-angle-double-right"></i></a>
     {% endif %}
 </div>

@@ -214,6 +214,31 @@ class DB:
                 .values(**kwargs))
             connection.commit()
 
+    def get_user_albums(self, *, user_id: int,
+                        offset: Optional[int] = 0,
+                        number: Optional[int] = 100) -> list[Any]:
+        """Get user albums from DB."""
+        with self.engine.connect() as connection:
+            statement = (select(self.album_table)
+                .join(self.mediaitem_table,
+                      self.album_table.c.cover_mediaitem_uid == self.mediaitem_table.c.mediaitem_uid,
+                      isouter=True)
+                .add_columns(self.mediaitem_table.c.id.label('mediaitem_id'))
+                .where(self.album_table.c.user_id == user_id)
+                .order_by(self.album_table.c.id.desc())
+                .offset(offset)
+                .limit(number))
+            albums = connection.execute(statement).all()
+        return albums
+
+    def get_user_albums_total(self, *, user_id: int) -> int:
+        """Get total user albums from DB."""
+        with self.engine.connect() as connection:
+            statement = (select(func.count()).select_from(self.album_table)
+                .where(self.album_table.c.user_id == user_id))
+            total = connection.execute(statement).scalar()
+        return total
+
     def get_user_album_by(self, *, user_id: int,
                           id: Optional[int] = None, 
                           album_uid: Optional[str] = None) -> Any:
@@ -255,6 +280,30 @@ class DB:
                 insert(self.album_table).values(**kwargs)).inserted_primary_key.id
             connection.commit()
         return id
+
+    def get_albumitems(self, *, album_uid: str, offset: Optional[int] = 0,
+                       number: Optional[int] = 100) -> list[Any]:
+        """Get album items from DB."""
+        with self.engine.connect() as connection:
+            statement = (select(self.mediaitem_table)
+                .join(self.albumitem_table,
+                      self.mediaitem_table.c.mediaitem_uid == self.albumitem_table.c.mediaitem_uid)
+                .where(self.albumitem_table.c.album_uid == album_uid)
+                .order_by(self.mediaitem_table.c.creation_time.desc())
+                .offset(offset)
+                .limit(number))
+            albumitems = connection.execute(statement).all()
+        return albumitems
+
+    def get_albumitems_total(self, *, album_uid: str) -> int:
+        """Get total album items from DB."""
+        with self.engine.connect() as connection:
+            statement = (select(func.count())
+                .select_from(self.mediaitem_table)
+                .join(self.albumitem_table, self.mediaitem_table.c.mediaitem_uid == self.albumitem_table.c.mediaitem_uid)
+                .where(self.albumitem_table.c.album_uid == album_uid))
+            total = connection.execute(statement).scalar()
+        return total
 
     def get_albumitem_by(self, *,
                          id: Optional[int] = None, 
