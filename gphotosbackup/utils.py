@@ -64,6 +64,10 @@ def convert_iso_to_timestamp(iso_time: str) -> Optional[int]:
     """Convert creation time to unix timestamp."""
     if not iso_time:
         return None
+    if len(iso_time) < 19:
+        return None
+    if int(iso_time.split('-')[0]) < 1980:
+        return None
     return datetime.fromisoformat(iso_time[:19]).timestamp()
 
 def download_file(url: str, filename: str,
@@ -74,7 +78,8 @@ def download_file(url: str, filename: str,
             r.raise_for_status()
             with open(filename, 'wb') as f:
                 shutil.copyfileobj(r.raw, f)
-            os.utime(filename, times=(filetime, filetime))
+            if filetime:
+                os.utime(filename, times=(filetime, filetime))
     except requests.exceptions.HTTPError as e:
         return e.response.status_code, e
     except Exception:
