@@ -10,6 +10,7 @@ from typing import Any, Callable, Optional
 
 import google.oauth2.credentials
 import googleapiclient.discovery
+import googleapiclient.errors
 
 from . import errors, models, utils
 
@@ -245,6 +246,14 @@ class GPhotosBackup:
                 response = self.gphoto_resource.mediaItems().list(
                     pageSize=10, pageToken=page_token).execute()
             self.update_credentials_callback()
+        except googleapiclient.errors.HttpError as e:
+            if e.status_code == 429:
+                print('The rate limit for this service has been exceeded. '
+                      'Try again in 24 hours.')
+                self.log_queue.put('The rate limit for this service has been '
+                                   'exceeded. Try again in 24 hours.')
+            with utils.disable_exception_traceback():
+                raise
         except KeyboardInterrupt:
             print('Downloading media items terminated. Run script again to continue.')
             with utils.disable_exception_traceback():
@@ -296,6 +305,14 @@ class GPhotosBackup:
             response = self.gphoto_resource.albums().list(
                 pageSize=50, pageToken=page_token).execute()
             self.update_credentials_callback()
+        except googleapiclient.errors.HttpError as e:
+            if e.status_code == 429:
+                print('The rate limit for this service has been exceeded. '
+                      'Try again in 24 hours.')
+                self.log_queue.put('The rate limit for this service has been '
+                                   'exceeded. Try again in 24 hours.')
+            with utils.disable_exception_traceback():
+                raise
         except KeyboardInterrupt:
             print('Downloading albums terminated. Run script again to continue.')
             with utils.disable_exception_traceback():
